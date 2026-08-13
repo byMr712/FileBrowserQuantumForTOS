@@ -1,0 +1,16 @@
+# Transient build intermediates created by tools/build_tpk.ps1 (payload.tar / payload.tar.xz)
+tools/_build/
+
+# Built package artifact — generate it with build_tpk.ps1 and attach to GitHub Releases
+*.tpk
+
+# Local Go build output (only relevant if you run `go build`, the script uses `go run`)
+tools/tarmake/tarmake.exe
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Editors
+.vscode/
+.idea/

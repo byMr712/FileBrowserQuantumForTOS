@@ -1,0 +1,20 @@
+File Browser Quantum
+=====================
+Copyright 2018 File Browser contributors
+Licensed under the Apache License, Version 2.0.
+Project: https://github.com/gtsteffaniak/filebrowser
+
+TerraMaster TPK packaging
+=========================
+Original module (1.2.1-stable) author: OutkastM
+    TerraMaster Community Place: https://tmnascommunity.eu/download/filebrowserquantum/
+
+Updated to v2.0.0-beta by: Mr712
+    https://github.com/byMr712?tab=repositories
+
+Modifications
+=============
+The original TPK module 1.2.1-stable was rebuilt with the FileBrowser Quantum
+v2.0.0-beta source code (https://github.com/gtsteffaniak/filebrowser).
+Nothing was removed from or added to the original module besides updating the
+FileBrowser Quantum application itself and adapting the configuration for it.
