@@ -1,0 +1,15 @@
+1:file:FileBrowserQuantum.lang:cd1faf4a987d4093e514c374ab61ee75
+1:folder:bin:
+1:file:bin/filebrowser.yml:87c9b62285afe0e23d397b403f350f2f
+1:file:bin/filebrowser.migrate.yml:9022a904a5c5ec74dbd14d2a1fe338b5
+1:folder:bin/program:
+1:file:bin/program/filebrowserquantum:45076c3dc35cd0a55f5572045f31397b
+1:folder:functions:
+1:file:functions/dependapps.sh:0334dc72b4cea22537bc0bc974009a62
+1:folder:images:
+1:folder:images/icons:
+1:file:images/icons/FileBrowserQuantum.png:d2e5cbbb90c62fb0a65a6e385fd1f18d
+1:folder:init.d:
+1:file:init.d/service:948efeeccf684d3be385aee197cd7cda
+1:file:version:eddd2ac149e1c3bb04a136d76ab05818
+1:file:webui.bz2:4e69dd71e95817d4a76299d47812f6b1
