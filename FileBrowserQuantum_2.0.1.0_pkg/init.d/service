@@ -1,0 +1,190 @@
+#!/bin/bash
+
+VERSION="2.0.1.0"
+MOD_NAME=FileBrowserQuantum
+
+ROOTUSER=`id -un` > /dev/null 2>&1
+LOGFILE=/usr/local/${MOD_NAME}/${MOD_NAME}_start.log
+
+export depend=(
+ ""
+ )
+. /usr/local/${MOD_NAME}/functions/dependapps.sh
+
+APP_ROOT=$(dirname $(dirname $(readlink -f $0)))
+BINDIR=$APP_ROOT/bin/program
+RUNDIR=/usr/local/${MOD_NAME}/bin
+PIDFILE=/usr/local/${MOD_NAME}/bin/${MOD_NAME}.pid
+DAEMON=filebrowserquantum
+
+
+
+wait_for_ready(){
+
+ _findPID
+ echo $PID
+    WAIT_DELAY=2
+    while [ $WAIT_DELAY -gt 0 ]; do
+        if [[ -n "$PID" ]] >/dev/null 2>&1; then
+			log_success_msg
+			return 0
+        fi
+        sleep 1
+        : $((WAIT_DELAY -= 1))
+    done
+	log_failure_msg
+    return 1
+}
+
+service_prepare(){ 		
+	df-json | grep /home >/dev/null
+    [ $? -ne 0 ] && exit 0	
+	
+	echo "MODCONFIGPATHHOME=$MODCONFIGPATHHOME" >> $LOGFILE 2>&1
+	echo "MODCONFIGPATH=$MODCONFIGPATH" >> $LOGFILE 2>&1
+	echo "MAIN_VOLUME=$MAIN_VOLUME" >> $LOGFILE 2>&1
+	echo "HOME_VOLUME=$VOLCONF" >> $LOGFILE 2>&1
+	
+	checkdep >> $LOGFILE 2>&1
+
+	if [ -f $MODCONFIGPATH/filebrowser.yml ]; then
+		if grep -qE '^[[:space:]]+database:[[:space:]]*[/]' $MODCONFIGPATH/filebrowser.yml; then
+			echo "$(date +"%d/%m/%y %T") Legacy config detected, backing it up and installing new config" >> $LOGFILE 2>&1
+			mv $MODCONFIGPATH/filebrowser.yml $MODCONFIGPATH/filebrowser.yml.legacy
+		fi
+	fi
+	if [ ! -f $MODCONFIGPATH/filebrowser.yml ]; then
+		if [ -f $MODCONFIGPATH/filebrowser.db ] && [ ! -f $MODCONFIGPATH/filebrowser.sqlite ]; then
+			echo "$(date +"%d/%m/%y %T") Legacy database detected, enabling automatic migration to SQLite" >> $LOGFILE 2>&1
+			cp -af $RUNDIR/filebrowser.migrate.yml $MODCONFIGPATH/filebrowser.yml
+		else
+			cp -af $RUNDIR/filebrowser.yml $MODCONFIGPATH
+		fi
+	fi
+	
+
+}
+
+_findPID(){
+	start-stop-daemon --status --pidfile $PIDFILE --chdir $BINDIR > /dev/null 2>&1
+    exit_status=$?
+	if [ $exit_status == 0 ];then
+	  PID=$(cat $PIDFILE)
+	else
+	  if [ -f $PIDFILE ];then
+		rm -f $PIDFILE
+	  fi
+	  
+	#get PID 
+	   PID=`ps axf | grep "/filebrowerquantum" | grep -v grep | awk '{print $1}'` > /dev/null 2>&1
+fi
+}
+
+check_already_running() {
+	
+	_findPID
+	if [[ -n "$PID" ]]; then
+			echo "${MOD_NAME} service is already running with PID: $pid."
+			exit 1
+	fi
+	echo "${MOD_NAME} service is not running, will start it now"
+
+}
+
+
+start(){
+  
+    init_config_folder
+	get_vol_name >> $LOGFILE 2>&1
+	get_main_volume >> $LOGFILE 2>&1
+	init_cert >> $LOGFILE 2>&1
+	AddConfigFolder >> $LOGFILE 2>&1
+	service_prepare >> $LOGFILE 2>&1
+    check_already_running >> $LOGFILE 2>&1
+
+SWITCHES="-c $MODCONFIGPATH/filebrowser.yml"   
+	
+	    echo -n "Starting $MOD_NAME: "
+			start-stop-daemon --start --make-pidfile --pidfile $PIDFILE \
+			    -b --chdir $BINDIR \
+				--startas /bin/bash -- -c "exec $BINDIR/$DAEMON $SWITCHES >> $LOGFILE 2>&1"		
+		wait_for_ready
+}
+
+  stop(){
+    echo -n "Stopping ${MOD_NAME} "
+		start-stop-daemon --stop --pidfile $PIDFILE --remove-pidfile \
+		--oknodo --retry 30
+		
+		count=3
+		for i in $(seq $count); do
+			_findPID
+			if [[ -n "$PID" ]]; then
+				echo "${MOD_NAME} service is still running with PID: $PID. Will try to close"
+			kill $PID
+			fi
+		done
+		
+		_findPID
+		if [[ -n "$PID" ]]; then
+			echo "${MOD_NAME} service is still running with PID: $PID. Will force close"
+		kill -9 $PID
+		fi
+	
+	echo "${MOD_NAME} service was closed"
+	
+}
+
+inst_version(){
+
+echo "installed version is $VERSION"
+
+}
+	  
+case "$1" in
+
+	start)
+	start
+	;;
+	
+	stop)
+	stop
+	;;
+	
+reload)
+    echo -n "Restarting ${MOD_NAME}: "
+    stop
+	sleep 2
+	start
+    echo "ok."
+    ;;
+status)
+	_findPID
+	
+	if [[ -n "$PID" ]]; then
+			echo "${MOD_NAME} (pid $PID) is running."
+			RETVAL=0
+		else
+			echo "${MOD_NAME} is stopped."
+			RETVAL=3
+		fi
+	;;
+reset)
+	stop
+	rm -rf /usr/local/@APP_CONFIG/${MOD_NAME} && rm -rf /usr/local/${MOD_NAME}/config
+    start
+;;
+
+inst_version)
+inst_version
+;;
+dep_check)
+	checkdep
+	;;
+  *)
+    echo "Usage: `basename $0` {start|stop|reset|reload|status}"
+    exit 1
+    ;;
+esac
+
+exit ${RETVAL}

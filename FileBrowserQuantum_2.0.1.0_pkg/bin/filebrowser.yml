@@ -1,0 +1,28 @@
+http:
+  port: 8087
+server:
+  logging:
+    - levels: "info|error|warning"
+      apiFilter: 'disabled'
+  cacheDir: "/usr/local/FileBrowserQuantum/config/tmp"
+  sources:
+    - path: "/Volume1"
+      name: "Mr712 NVME 512GB"
+    - path: "/Volume3"
+      name: "Mr712 HDD1 10TB"
+    - path: "/Volume2"
+      name: "Mr712 HDD2 10TB"
+    - path: "/Volume1/pasta"
+      name: "Pasta NVME 24GB"
+    - path: "/Volume1/maria"
+      name: "Maria NVME 24GB"
+  database:
+    path: /usr/local/FileBrowserQuantum/config/filebrowser.sqlite
+auth:
+  methods:
+    password:
+      enabled: true
+      minLength: 5
+      signup: false
+    passkey:
+      enabled: false

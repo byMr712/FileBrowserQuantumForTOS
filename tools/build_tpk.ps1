@@ -20,7 +20,7 @@
 
 .PARAMETER PkgDir
     Каталог с деревом пакета (относительно папки скрипта).
-    По умолчанию ..\FileBrowserQuantum_2.0.0.0_pkg
+    По умолчанию ..\FileBrowserQuantum_2.0.1.0_pkg
 
 .PARAMETER OutDir
     Куда положить готовый .tpk (относительно папки скрипта). По умолчанию ..\ (filebrowser_new_build).
@@ -41,7 +41,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$PkgDir = '..\FileBrowserQuantum_2.0.0.0_pkg',
+    [string]$PkgDir = '..\FileBrowserQuantum_2.0.1.0_pkg',
     [string]$OutDir = '..',
     [string]$XzPath = '',
     [string]$ReleaseTag = 'beta'
@@ -63,6 +63,28 @@ function Get-MD5([string]$path) {
 }
 
 if (-not (Test-Path -LiteralPath $PkgDir)) { throw "Package dir not found (relative to $WorkRoot): $PkgDir" }
+
+# ---- 0. Normalize text files to LF (CRLF breaks the #!/bin/bash shebang on TOS) --
+$lfFiles = @(
+    'FileBrowserQuantum.lang',
+    'INFO',
+    'bin/filebrowser.yml',
+    'bin/filebrowser.migrate.yml',
+    'config.ini',
+    'functions/dependapps.sh',
+    'init.d/service',
+    'version'
+)
+foreach ($rel in $lfFiles) {
+    $p = Join-Path $PkgDir ($rel -replace '/', [IO.Path]::DirectorySeparatorChar)
+    if (-not (Test-Path -LiteralPath $p)) { continue }
+    $b = [System.IO.File]::ReadAllBytes($p)
+    if ($b.Contains([byte]13)) {
+        $t = [System.Text.Encoding]::UTF8.GetString($b) -replace "`r`n", "`n" -replace "`r", "`n"
+        [System.IO.File]::WriteAllText($p, $t, [System.Text.UTF8Encoding]::new($false))
+        Write-Host "Normalized LF: $rel"
+    }
+}
 
 # ---- 1. Regenerate INFO (same layout as the original package) -------------------
 $infoLines = @(
