@@ -68,7 +68,7 @@ descript = "Filebrowser Quantum provides a file managing interface within a spec
 name = "FileBrowser Quantum"
 auth = "FileBrowser"
 version = "2.0.1.0"
-descript = "Filebrowser Quantum provides a file managing interface within a specified directory and it can be used to upload, delete, preview, rename and edit your files. It allows the creation of multiple users and each user can have its own directory. It can be used as a standalone app or as a middleware."
+descript = "FileBrowser Quantum предоставляет веб-интерфейс для управления файлами и папками: загрузка, удаление, предварительный просмотр, переименование и редактирование файлов. Поддерживает создание нескольких пользователей с индивидуальными каталогами и правами доступа."
 
 [tr-tr]
 name = "FileBrowser Quantum"

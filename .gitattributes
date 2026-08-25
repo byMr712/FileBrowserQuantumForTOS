@@ -1,6 +1,9 @@
+* text=auto
 *.sh text eol=lf
 *.yml text eol=lf
 *.lang text eol=lf
 config.ini text eol=lf
 version text eol=lf
 INFO text eol=lf
+init.d/* text eol=lf
+
