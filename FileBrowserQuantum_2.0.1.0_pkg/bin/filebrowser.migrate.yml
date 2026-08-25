@@ -7,15 +7,9 @@ server:
   cacheDir: "/usr/local/FileBrowserQuantum/config/tmp"
   sources:
     - path: "/Volume1"
-      name: "Mr712 NVME 512GB"
-    - path: "/Volume3"
-      name: "Mr712 HDD1 10TB"
+      name: "Volume 1"
     - path: "/Volume2"
-      name: "Mr712 HDD2 10TB"
-    - path: "/Volume1/pasta"
-      name: "Pasta NVME 24GB"
-    - path: "/Volume1/maria"
-      name: "Maria NVME 24GB"
+      name: "Volume 2"
   database:
     path: /usr/local/FileBrowserQuantum/config/filebrowser.sqlite
     migrateFrom: /usr/local/FileBrowserQuantum/config/filebrowser.db
@@ -27,3 +21,4 @@ auth:
       signup: false
     passkey:
       enabled: false
+

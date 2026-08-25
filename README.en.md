@@ -55,7 +55,8 @@ A clean install is recommended, but if you want to upgrade:
 |---|---|
 | `FileBrowserQuantum_TOS7_TOS6_2.0.1.0-beta-x86_64.tpk` | Ready package for App Center |
 | `FileBrowserQuantum_2.0.1.0_pkg/` | Package tree (payload sources): `config.ini`, `.lang`, `INFO`, `version`, `bin/`, `functions/`, `images/`, `init.d/`, `webui.bz2` |
-| `tools/build_tpk.ps1` | Build script for the `.tpk` from the package tree (all paths are relative to `tools\`) |
+| `tools/build_tpk.ps1` | Build script for `.tpk` on Windows (PowerShell) |
+| `tools/build_tpk.sh` | Build script for `.tpk` on Linux / macOS (Bash) |
 | `tools/tarmake/` | Go utility: builds a GNU tar with the correct permissions (`root:root`, matching the original) |
 | `tools/go.work` | Go workspace so tarmake can be built from the `tools\` folder (`go run ./tarmake ...`) |
 | `tools/xz/` | Bundled `xz.exe` + `liblzma-5.dll` + XZ Utils licenses (COPYING, COPYING.0BSD, COPYING.GPLv2, AUTHORS). Used unless xz is found in Git for Windows |

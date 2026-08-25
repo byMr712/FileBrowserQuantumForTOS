@@ -57,7 +57,8 @@
 |---|---|
 | `FileBrowserQuantum_TOS7_TOS6_2.0.1.0-beta-x86_64.tpk` | Готовый пакет для установки в App Center |
 | `FileBrowserQuantum_2.0.1.0_pkg/` | Дерево пакета (исходники payload): `config.ini`, `.lang`, `INFO`, `version`, `bin/`, `functions/`, `images/`, `init.d/`, `webui.bz2` |
-| `tools/build_tpk.ps1` | Скрипт сборки `.tpk` из дерева пакета (все пути — относительные, от папки `tools\`) |
+| `tools/build_tpk.ps1` | Скрипт сборки `.tpk` для Windows PowerShell |
+| `tools/build_tpk.sh` | Скрипт сборки `.tpk` для Linux / macOS (Bash) |
 | `tools/tarmake/` | Go-утилита: создаёт GNU-tar с нужными правами (`root:root`, права как в оригинале) |
 | `tools/go.work` | Go workspace: позволяет собирать tarmake из папки `tools\` (`go run ./tarmake ...`) |
 | `tools/xz/` | Вложенный `xz.exe` + `liblzma-5.dll` + лицензии XZ Utils (COPYING, COPYING.0BSD, COPYING.GPLv2, AUTHORS). Используется, если нет xz в Git for Windows |

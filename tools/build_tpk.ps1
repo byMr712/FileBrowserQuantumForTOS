@@ -86,32 +86,30 @@ foreach ($rel in $lfFiles) {
     }
 }
 
-# ---- 1. Regenerate INFO (same layout as the original package) -------------------
-$infoLines = @(
-    "1:file:FileBrowserQuantum.lang:$(Get-MD5 (Join-Path $PkgDir 'FileBrowserQuantum.lang'))",
-    '1:folder:bin:',
-    "1:file:bin/filebrowser.yml:$(Get-MD5 (Join-Path $PkgDir 'bin\filebrowser.yml'))",
-    "1:file:bin/filebrowser.migrate.yml:$(Get-MD5 (Join-Path $PkgDir 'bin\filebrowser.migrate.yml'))",
-    '1:folder:bin/program:',
-    "1:file:bin/program/filebrowserquantum:$(Get-MD5 (Join-Path $PkgDir 'bin\program\filebrowserquantum'))",
-    '1:folder:functions:',
-    "1:file:functions/dependapps.sh:$(Get-MD5 (Join-Path $PkgDir 'functions\dependapps.sh'))",
-    '1:folder:images:',
-    '1:folder:images/icons:',
-    "1:file:images/icons/FileBrowserQuantum.png:$(Get-MD5 (Join-Path $PkgDir 'images\icons\FileBrowserQuantum.png'))",
-    '1:folder:init.d:',
-    "1:file:init.d/service:$(Get-MD5 (Join-Path $PkgDir 'init.d\service'))",
-    "1:file:version:$(Get-MD5 (Join-Path $PkgDir 'version'))",
-    "1:file:webui.bz2:$(Get-MD5 (Join-Path $PkgDir 'webui.bz2'))"
-)
+# ---- 1. Regenerate INFO dynamically (same format as TOS standard) --------------
+$infoLines = [System.Collections.Generic.List[string]]::new()
+$allFiles = Get-ChildItem -LiteralPath $PkgDir -Recurse | Sort-Object { $_.FullName.Replace('\', '/') }
+
+foreach ($item in $allFiles) {
+    $rel = [System.IO.Path]::GetRelativePath($PkgDir, $item.FullName).Replace('\', '/')
+    if ($rel -eq 'INFO' -or $rel -eq 'config.ini' -or $rel.StartsWith('.')) { continue }
+    if ($item.PSIsContainer) {
+        $infoLines.Add("1:folder:${rel}:")
+    } else {
+        $fileMd5 = Get-MD5 $item.FullName
+        $infoLines.Add("1:file:${rel}:${fileMd5}")
+    }
+}
 $infoText = ($infoLines -join "`n") + "`n"
 [System.IO.File]::WriteAllText((Join-Path $PkgDir 'INFO'), $infoText, [System.Text.UTF8Encoding]::new($false))
-Write-Host "INFO regenerated: $((Get-Item (Join-Path $PkgDir 'INFO')).Length) bytes"
+Write-Host "INFO regenerated: $((Get-Item (Join-Path $PkgDir 'INFO')).Length) bytes ($($infoLines.Count) entries)"
 
 # ---- 2. Locate tools -------------------------------------------------------------
 $go = Get-Command go -ErrorAction SilentlyContinue
 if (-not $go) { $go = Get-Command 'C:\Program Files\Go\bin\go.exe' -ErrorAction SilentlyContinue }
-if (-not $go) { throw 'Go not found. Install Go 1.26+ (https://go.dev/dl/)' }
+
+$py = Get-Command py -ErrorAction SilentlyContinue
+if (-not $py) { $py = Get-Command python -ErrorAction SilentlyContinue }
 
 if (-not $XzPath) {
     $candidates = @(
@@ -125,13 +123,81 @@ if (-not $XzPath) {
 if (-not $XzPath) { throw 'xz.exe not found. Put xz.exe into tools\xz\ or pass -XzPath' }
 Write-Host "Using xz: $XzPath"
 
-# ---- 3. Build payload.tar (GNU tar via Go tool, relative to this folder) ----------
+# ---- 3. Build payload.tar (GNU tar via Go tool or Python fallback) -----------------
 $tarPath = Join-Path $BuildDir 'payload.tar'
 $xzOut   = Join-Path $BuildDir 'payload.tar.xz'
 
-Write-Host "Building payload.tar with tarmake ..."
-& $go.Source run ./tarmake $PkgDir $tarPath
-if ($LASTEXITCODE -ne 0) { throw "tarmake failed (exit $LASTEXITCODE)" }
+$builtTar = $false
+if ($go) {
+    Write-Host "Building payload.tar with tarmake (Go) ..."
+    try {
+        & $go.Source run ./tarmake $PkgDir $tarPath
+        if ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $tarPath)) {
+            $builtTar = $true
+        }
+    } catch {
+        Write-Warning "Go tarmake failed: $_"
+    }
+}
+
+if (-not $builtTar) {
+    if ($py) {
+        Write-Host "Building payload.tar via Python fallback ..."
+        $pyCode = @'
+import tarfile, os, sys
+
+src_dir = sys.argv[1]
+out_tar = sys.argv[2]
+mtime = 1785542400 # 2026-08-01 00:00:00 UTC
+
+def filter_tar(tarinfo):
+    tarinfo.uid = 0
+    tarinfo.gid = 0
+    tarinfo.uname = "root"
+    tarinfo.gname = "root"
+    tarinfo.mtime = mtime
+    rel = tarinfo.name
+    if tarinfo.isdir():
+        tarinfo.mode = 0o755
+    elif rel in ("INFO", "init.d/service") or rel.startswith("init.d/"):
+        tarinfo.mode = 0o755
+    elif rel in ("bin/program/filebrowserquantum", "functions/dependapps.sh") or rel.startswith("bin/program/") or rel.endswith(".sh"):
+        tarinfo.mode = 0o744
+    else:
+        tarinfo.mode = 0o644
+    return tarinfo
+
+with tarfile.open(out_tar, "w", format=tarfile.GNU_FORMAT) as tar:
+    entries = []
+    for root, dirs, files in os.walk(src_dir):
+        for d in dirs:
+            full = os.path.join(root, d)
+            rel = os.path.relpath(full, src_dir).replace("\\", "/")
+            if rel.startswith(".") or os.path.basename(rel) in (".git", "Thumbs.db"):
+                continue
+            entries.append((rel, full, True))
+        for f in files:
+            full = os.path.join(root, f)
+            rel = os.path.relpath(full, src_dir).replace("\\", "/")
+            if rel.startswith(".") or os.path.basename(rel) in (".git", "Thumbs.db", "Desktop.ini"):
+                continue
+            entries.append((rel, full, False))
+    entries.sort(key=lambda x: x[0])
+    for rel, full, is_dir in entries:
+        tar.add(full, arcname=rel, recursive=False, filter=filter_tar)
+'@
+        $absPkg = (Resolve-Path $PkgDir).Path
+        $absTar = [System.IO.Path]::GetFullPath($tarPath)
+        & $py.Source -c $pyCode $absPkg $absTar
+        if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $tarPath)) {
+            throw "Python tar builder failed (exit $LASTEXITCODE)"
+        }
+        $builtTar = $true
+    } else {
+        throw "Neither Go nor Python available to create GNU payload.tar"
+    }
+}
+
 
 # ---- 4. Compress payload.tar -> payload.tar.xz (binary-safe) ---------------------
 Write-Host "Compressing with xz -9e ..."
@@ -161,7 +227,32 @@ $payloadBytes = [System.IO.File]::ReadAllBytes($xzOut)
 
 if ($langBytes.Length -gt 8192) { throw "FileBrowserQuantum.lang too large: $($langBytes.Length) > 8192" }
 
-$header = '{"id":"FileBrowserQuantum","md5":"' + $md5 + '","icon":"/images/icons/FileBrowserQuantum.png","path":"/FileBrowserQuantum/","name":"FileBrowser Quantum","publisher":"OutkastM","exec":true,"open_path":false,"resize":true,"maxmin":true,"state":false,"type":"iframe","help":"/FileBrowserQuantum/","version":"' + $version + '","recommend":false,"beta":false,"category":"Utilities","depend":[],"relation":null,"platform":"x86_64","low_version":"6.0.420","reset":false,"official":"/FileBrowserQuantum/"}'
+$headerObj = [ordered]@{
+    id          = $cfg.id
+    md5         = $md5
+    icon        = $cfg.icon
+    path        = $cfg.path
+    name        = $cfg.name
+    publisher   = $cfg.publisher
+    exec        = [bool]$cfg.exec
+    open_path   = [bool]$cfg.open_path
+    resize      = [bool]$cfg.resize
+    maxmin      = [bool]$cfg.maxmin
+    state       = [bool]$cfg.state
+    type        = $cfg.type
+    help        = $cfg.help
+    version     = $cfg.version
+    recommend   = [bool]$cfg.recommend
+    beta        = [bool]$cfg.beta
+    category    = $cfg.category
+    depend      = @($cfg.depend)
+    relation    = $null
+    platform    = $cfg.platform
+    low_version = $cfg.low_version
+    reset       = [bool]$cfg.reset
+    official    = $cfg.official
+}
+$header = ($headerObj | ConvertTo-Json -Compress)
 if ($header.Length -gt 2048) { throw "Header too large: $($header.Length) > 2048" }
 
 $ms = [System.IO.MemoryStream]::new()
@@ -181,3 +272,4 @@ Write-Host "payload md5: $md5"
 # ---- 6. Cleanup transient build files --------------------------------------------
 Remove-Item -LiteralPath $xzOut -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath $BuildDir -Force -ErrorAction SilentlyContinue
+
