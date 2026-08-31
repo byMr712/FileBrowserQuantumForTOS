@@ -20,7 +20,7 @@
 
 .PARAMETER PkgDir
     Каталог с деревом пакета (относительно папки скрипта).
-    По умолчанию ..\FileBrowserQuantum_2.0.4.0_pkg
+    По умолчанию ..\FileBrowserQuantumTOS
 
 .PARAMETER OutDir
     Куда положить готовый .tpk (относительно папки скрипта). По умолчанию ..\ (filebrowser_new_build).
@@ -41,7 +41,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$PkgDir = '..\FileBrowserQuantum_2.0.4.0_pkg',
+    [string]$PkgDir = '..\FileBrowserQuantumTOS',
     [string]$OutDir = '..',
     [string]$XzPath = '',
     [string]$ReleaseTag = 'beta'
