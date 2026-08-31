@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Build TPK package for TerraMaster TOS6/TOS7 on Linux / macOS
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PKG_DIR="${1:-$SCRIPT_DIR/../FileBrowserQuantum_2.0.2.0_pkg}"
+PKG_DIR="${1:-$SCRIPT_DIR/../FileBrowserQuantum_2.0.4.0_pkg}"
 OUT_DIR="${2:-$SCRIPT_DIR/..}"
 RELEASE_TAG="${3:-beta}"
 
