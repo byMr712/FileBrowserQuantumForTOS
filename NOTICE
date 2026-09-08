@@ -9,12 +9,12 @@ TerraMaster TPK packaging
 Original module (1.2.1-stable) author: OutkastM
     TerraMaster Community Place: https://tmnascommunity.eu/download/filebrowserquantum/
 
-Updated to v2.0.4-beta by: Mr712
+Updated to v2.0.5-beta by: Mr712
     https://github.com/byMr712?tab=repositories
 
 Modifications
 =============
 The original TPK module 1.2.1-stable was rebuilt with the FileBrowser Quantum
-v2.0.4-beta source code (https://github.com/gtsteffaniak/filebrowser).
+v2.0.5-beta source code (https://github.com/gtsteffaniak/filebrowser).
 Nothing was removed from or added to the original module besides updating the
 FileBrowser Quantum application itself and adapting the configuration for it.

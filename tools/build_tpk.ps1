@@ -59,7 +59,8 @@ New-Item -ItemType Directory -Force -Path $BuildDir | Out-Null
 
 function Get-MD5([string]$path) {
     $h = [System.Security.Cryptography.MD5]::Create()
-    return [Convert]::ToHexString($h.ComputeHash([System.IO.File]::ReadAllBytes($path))).ToLower()
+    $hashBytes = $h.ComputeHash([System.IO.File]::ReadAllBytes($path))
+    return ([System.BitConverter]::ToString($hashBytes) -replace '-').ToLower()
 }
 
 if (-not (Test-Path -LiteralPath $PkgDir)) { throw "Package dir not found (relative to $WorkRoot): $PkgDir" }
@@ -79,7 +80,7 @@ foreach ($rel in $lfFiles) {
     $p = Join-Path $PkgDir ($rel -replace '/', [IO.Path]::DirectorySeparatorChar)
     if (-not (Test-Path -LiteralPath $p)) { continue }
     $b = [System.IO.File]::ReadAllBytes($p)
-    if ($b.Contains([byte]13)) {
+    if ([System.Array]::IndexOf($b, [byte]13) -ge 0) {
         $t = [System.Text.Encoding]::UTF8.GetString($b) -replace "`r`n", "`n" -replace "`r", "`n"
         [System.IO.File]::WriteAllText($p, $t, [System.Text.UTF8Encoding]::new($false))
         Write-Host "Normalized LF: $rel"
@@ -88,11 +89,13 @@ foreach ($rel in $lfFiles) {
 
 # ---- 1. Regenerate INFO dynamically (same format as TOS standard) --------------
 $infoLines = [System.Collections.Generic.List[string]]::new()
+$absPkgNormalized = (Resolve-Path $PkgDir).Path.TrimEnd('\', '/').Replace('\', '/')
 $allFiles = Get-ChildItem -LiteralPath $PkgDir -Recurse | Sort-Object { $_.FullName.Replace('\', '/') }
 
 foreach ($item in $allFiles) {
-    $rel = [System.IO.Path]::GetRelativePath($PkgDir, $item.FullName).Replace('\', '/')
-    if ($rel -eq 'INFO' -or $rel -eq 'config.ini' -or $rel.StartsWith('.')) { continue }
+    $full = $item.FullName.Replace('\', '/')
+    $rel = $full.Substring($absPkgNormalized.Length).TrimStart('/')
+    if ($rel -eq 'INFO' -or $rel -eq 'config.ini' -or $rel.StartsWith('.') -or (Split-Path $rel -Leaf).StartsWith('.')) { continue }
     if ($item.PSIsContainer) {
         $infoLines.Add("1:folder:${rel}:")
     } else {
@@ -109,7 +112,12 @@ $go = Get-Command go -ErrorAction SilentlyContinue
 if (-not $go) { $go = Get-Command 'C:\Program Files\Go\bin\go.exe' -ErrorAction SilentlyContinue }
 
 $py = Get-Command py -ErrorAction SilentlyContinue
-if (-not $py) { $py = Get-Command python -ErrorAction SilentlyContinue }
+if (-not $py) {
+    $pyCandidate = Get-Command python -ErrorAction SilentlyContinue
+    if ($pyCandidate -and $pyCandidate.Source -notlike "*WindowsApps*") {
+        $py = $pyCandidate
+    }
+}
 
 if (-not $XzPath) {
     $candidates = @(
@@ -137,6 +145,20 @@ if ($go) {
         }
     } catch {
         Write-Warning "Go tarmake failed: $_"
+    }
+
+    # Если локальный Go повреждён (как системный go1.27.0), пробуем с проверенным toolchain go1.26.5
+    if (-not $builtTar -and -not $env:GOTOOLCHAIN) {
+        Write-Host "Retrying tarmake with GOTOOLCHAIN=go1.26.5 ..."
+        $env:GOTOOLCHAIN = "go1.26.5"
+        try {
+            & $go.Source run ./tarmake $PkgDir $tarPath
+            if ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $tarPath)) {
+                $builtTar = $true
+            }
+        } catch {
+            Write-Warning "Go tarmake retry with go1.26.5 failed: $_"
+        }
     }
 }
 
