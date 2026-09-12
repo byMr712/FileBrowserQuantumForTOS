@@ -108,8 +108,13 @@ $infoText = ($infoLines -join "`n") + "`n"
 Write-Host "INFO regenerated: $((Get-Item (Join-Path $PkgDir 'INFO')).Length) bytes ($($infoLines.Count) entries)"
 
 # ---- 2. Locate tools -------------------------------------------------------------
+# Приоритет: go из PATH → E:\go1.27.0 → C:\Program Files\Go (сломанный, последний)
 $go = Get-Command go -ErrorAction SilentlyContinue
+if (-not $go -and (Test-Path 'E:\go1.27.0\bin\go.exe')) {
+    $go = Get-Command 'E:\go1.27.0\bin\go.exe' -ErrorAction SilentlyContinue
+}
 if (-not $go) { $go = Get-Command 'C:\Program Files\Go\bin\go.exe' -ErrorAction SilentlyContinue }
+if ($go) { Write-Host "Using go: $($go.Source)" }
 
 $py = Get-Command py -ErrorAction SilentlyContinue
 if (-not $py) {
@@ -147,17 +152,26 @@ if ($go) {
         Write-Warning "Go tarmake failed: $_"
     }
 
-    # Если локальный Go повреждён (как системный go1.27.0), пробуем с проверенным toolchain go1.26.5
-    if (-not $builtTar -and -not $env:GOTOOLCHAIN) {
-        Write-Host "Retrying tarmake with GOTOOLCHAIN=go1.26.5 ..."
-        $env:GOTOOLCHAIN = "go1.26.5"
+    # Фолбэк: если tarmake не собрался — пробуем через локальный Go 1.27.0
+    if (-not $builtTar -and (Test-Path 'E:\go1.27.0\bin\go.exe')) {
+        Write-Host "Retrying tarmake with E:\go1.27.0 ..."
+        $prevGOROOT = $env:GOROOT
+        $prevPATH   = $env:PATH
+        $prevTC     = $env:GOTOOLCHAIN
         try {
-            & $go.Source run ./tarmake $PkgDir $tarPath
+            $env:GOROOT = 'E:\go1.27.0'
+            $env:PATH   = "E:\go1.27.0\bin;$env:PATH"
+            $env:GOTOOLCHAIN = 'local'
+            & 'E:\go1.27.0\bin\go.exe' run ./tarmake $PkgDir $tarPath
             if ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath $tarPath)) {
                 $builtTar = $true
             }
         } catch {
-            Write-Warning "Go tarmake retry with go1.26.5 failed: $_"
+            Write-Warning "Go tarmake retry with E:\go1.27.0 failed: $_"
+        } finally {
+            $env:GOROOT = $prevGOROOT
+            $env:PATH   = $prevPATH
+            $env:GOTOOLCHAIN = $prevTC
         }
     }
 }
@@ -219,7 +233,6 @@ with tarfile.open(out_tar, "w", format=tarfile.GNU_FORMAT) as tar:
         throw "Neither Go nor Python available to create GNU payload.tar"
     }
 }
-
 
 # ---- 4. Compress payload.tar -> payload.tar.xz (binary-safe) ---------------------
 Write-Host "Compressing with xz -9e ..."
@@ -294,4 +307,3 @@ Write-Host "payload md5: $md5"
 # ---- 6. Cleanup transient build files --------------------------------------------
 Remove-Item -LiteralPath $xzOut -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath $BuildDir -Force -ErrorAction SilentlyContinue
-

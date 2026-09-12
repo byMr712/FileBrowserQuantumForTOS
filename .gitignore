@@ -16,7 +16,7 @@ Desktop.ini
 .idea/
 
 # Release
-.zip
+*.zip
 
 # Official sources
 sources*/

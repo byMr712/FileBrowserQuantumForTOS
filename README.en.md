@@ -2,24 +2,24 @@
 
 > **Language:** English · [Русский](README.md)
 
-Built package **FileBrowser Quantum 2.0.5-beta** for TerraMaster x86_64 NAS (TOS6/TOS7).
+Built package **FileBrowser Quantum 2.0.6-beta** for TerraMaster x86_64 NAS (TOS6/TOS7).
 This folder contains the package tree, build tools, and everything needed to rebuild it.
 
 ## Credits
 
 - **Original module author:** [OutkastM](https://tmnascommunity.eu/download/filebrowserquantum/) — TerraMaster Community Place.
-- **Updated to 2.0.5-beta by:** [Mr712](https://github.com/byMr712?tab=repositories).
+- **Updated to 2.0.6-beta by:** [Mr712](https://github.com/byMr712?tab=repositories).
 - This package is built solely from the original module **1.2.1-stable** packaging and the
   [FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser) source code.
   **Nothing was removed from or added to the original module** — only the FileBrowser Quantum
-  application itself was updated to v2.0.5-beta and its configuration adapted.
+  application itself was updated to v2.0.6-beta and its configuration adapted.
   
 ## Disclaimer
 
 This package is provided **as is**, without warranties of any kind, either express or implied,
 including, but not limited to, the implied warranties of merchantability, fitness for a particular purpose, and non-infringement.
 
-- This package is a **beta** build (2.0.5-beta) from a community member and is **not** an official
+- This package is a **beta** build (2.0.6-beta) from a community member and is **not** an official
 release of TerraMaster or FileBrowser.
 - Use at your own risk. The author is **not responsible** for data loss, system crashes, downtime, or any other consequences of installing and using this package.
 - Always back up your data and NAS configuration before installing or updating.
@@ -81,7 +81,7 @@ Key facts (verified against the original 1.2.1.0 package):
 
 ## Build requirements
 
-- **Go 1.26+** (tested with 1.26.5) — to build the backend and the tarmake utility. https://go.dev/dl/
+- **Go 1.27+** (tested with 1.27.0) — to build the backend and the tarmake utility. https://go.dev/dl/
 - **Node 20+ / npm** — not required for script-based builds, only for a full frontend rebuild.
 - **xz.exe** — bundled in `tools/xz/` (with its licenses); a separate Git for Windows install is not required.
   If xz is missing, the script looks for `C:\Program Files\Git\mingw64\bin\xz.exe`.
@@ -140,7 +140,7 @@ Copy-Item -Recurse -Force ..\backend\internal\web\dist\* ..\backend\internal\web
 cd <src>\backend
 $env:GOTOOLCHAIN="go1.26.5"
 $env:GOOS="linux"; $env:GOARCH="amd64"; $env:CGO_ENABLED="0"
-go build -trimpath -o filebrowserquantum --ldflags="-w -s -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.CommitSHA=n/a' -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.Version=2.0.5-beta'" .
+go build -trimpath -o filebrowserquantum --ldflags="-w -s -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.CommitSHA=n/a' -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.Version=2.0.6-beta'" .
 
 # 3) Replace the binary in the package tree
 Copy-Item backend\filebrowserquantum .\FileBrowserQuantumTOS\bin\program\filebrowserquantum

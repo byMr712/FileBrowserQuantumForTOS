@@ -2,13 +2,13 @@
 
 > **Язык:** Русский · [English](README.en.md)
 
-Готовый пакет **FileBrowser Quantum 2.0.5-beta** для x86_64 NAS TerraMaster (TOS6/TOS7).
+Готовый пакет **FileBrowser Quantum 2.0.6-beta** для x86_64 NAS TerraMaster (TOS6/TOS7).
 В этой папке — дерево пакета, инструменты сборки и всё необходимое для пересборки.
 
 ## Авторы
 
 - **Автор оригинального модуля:** [OutkastM](https://tmnascommunity.eu/download/filebrowserquantum/) — TerraMaster Community Place.
-- **Кем обновлён до 2.0.5-beta:** [Mr712](https://github.com/byMr712?tab=repositories).
+- **Кем обновлён до 2.0.6-beta:** [Mr712](https://github.com/byMr712?tab=repositories).
 - Пакет собран исключительно из упаковки оригинального модуля **1.2.1-stable** и исходников
   [FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser).
   **Ничего не было вырезано и не добавлено** — обновлено только само приложение FileBrowser
@@ -20,7 +20,7 @@
 включая, но не ограничиваясь, подразумеваемыми гарантиями товарной пригодности, пригодности
 для конкретной цели и ненарушения прав.
 
-- Пакет — **бета**-сборка (2.0.5-beta) от участника сообщества и **не является** официальным
+- Пакет — **бета**-сборка (2.0.6-beta) от участника сообщества и **не является** официальным
   релизом TerraMaster или FileBrowser.
 - Используйте на свой страх и риск. Автор **не несёт ответственности** за потерю данных, сбои
   системы, простой или любые другие последствия установки и использования этого пакета.
@@ -83,7 +83,7 @@
 
 ## Что требуется для сборки
 
-- **Go 1.26+** (проверено: 1.26.5) — сборка backend и утилиты tarmake. https://go.dev/dl/
+- **Go 1.27+** (проверено: 1.27.0) — сборка backend и утилиты tarmake. https://go.dev/dl/
 - **Node 20+ / npm** — не нужен для сборки скриптом, только для полной пересборки frontend.
 - **xz.exe** — вложен в `tools/xz/` (вместе с лицензиями), отдельная установка Git for Windows не нужна.
   Если xz отсутствует, скрипт ищет `C:\Program Files\Git\mingw64\bin\xz.exe`.
@@ -141,7 +141,7 @@ Copy-Item -Recurse -Force ..\backend\internal\web\dist\* ..\backend\internal\web
 cd <src>\backend
 $env:GOTOOLCHAIN="go1.26.5"
 $env:GOOS="linux"; $env:GOARCH="amd64"; $env:CGO_ENABLED="0"
-go build -trimpath -o filebrowserquantum --ldflags="-w -s -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.CommitSHA=n/a' -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.Version=2.0.5-beta'" .
+go build -trimpath -o filebrowserquantum --ldflags="-w -s -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.CommitSHA=n/a' -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.Version=2.0.6-beta'" .
 
 # 3) Заменить бинарник в дереве пакета
 Copy-Item backend\filebrowserquantum .\FileBrowserQuantumTOS\bin\program\filebrowserquantum

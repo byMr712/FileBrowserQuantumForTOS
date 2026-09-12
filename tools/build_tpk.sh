@@ -29,6 +29,52 @@ get_md5() {
     fi
 }
 
+# ---- Locate Go >= 1.27.0 -----------------------------------------------------
+# Приоритет: go из PATH → $GO_127_ROOT/bin/go → /usr/local/go/bin/go
+# Переопределить путь можно переменной окружения GO_127_ROOT.
+GO_127_ROOT="${GO_127_ROOT:-}"
+
+find_go() {
+    # 1) go из PATH — но проверим версию
+    if command -v go >/dev/null 2>&1; then
+        local v
+        v="$(go version 2>/dev/null || true)"
+        if [[ "$v" =~ go1\.(2[7-9]|[3-9][0-9]) ]]; then
+            echo "$(command -v go)"
+            return 0
+        fi
+    fi
+    # 2) явный GO_127_ROOT
+    if [ -n "$GO_127_ROOT" ] && [ -x "$GO_127_ROOT/bin/go" ]; then
+        echo "$GO_127_ROOT/bin/go"
+        return 0
+    fi
+    # 3) стандартные места для Linux/macOS
+    for c in /usr/local/go/bin/go /opt/go/bin/go "$HOME/go/bin/go"; do
+        if [ -x "$c" ]; then
+            local v
+            v="$("$c" version 2>/dev/null || true)"
+            if [[ "$v" =~ go1\.(2[7-9]|[3-9][0-9]) ]]; then
+                echo "$c"
+                return 0
+            fi
+        fi
+    done
+    return 1
+}
+
+GO_BIN="$(find_go || true)"
+if [ -z "$GO_BIN" ]; then
+    echo "Error: Go >= 1.27.0 not found. Install it or set GO_127_ROOT." >&2
+    exit 1
+fi
+echo "Using go: $GO_BIN"
+
+# Убедимся, что tarmake соберётся именно этим Go, а не случайным toolchain.
+# GOTOOLCHAIN=local запрещает go автоматически скачивать другой toolchain.
+export GOTOOLCHAIN=local
+export GOROOT="$(cd "$(dirname "$GO_BIN")/.." && pwd)"
+
 echo "==> Regenerating INFO..."
 INFO_FILE="$PKG_DIR/INFO"
 > "$INFO_FILE"
@@ -53,7 +99,8 @@ echo "==> Building payload.tar with tarmake..."
 TAR_PATH="$BUILD_DIR/payload.tar"
 XZ_PATH="$BUILD_DIR/payload.tar.xz"
 
-go run ./tarmake "$PKG_DIR" "$TAR_PATH"
+# tarmake собирается и запускается выбранным Go.
+"$GO_BIN" run ./tarmake "$PKG_DIR" "$TAR_PATH"
 
 echo "==> Compressing with xz -9e..."
 xz -9e -c "$TAR_PATH" > "$XZ_PATH"
