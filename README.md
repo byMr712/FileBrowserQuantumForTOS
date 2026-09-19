@@ -44,18 +44,22 @@
   
 ## Обновляетесь с версии v1.x?
 
-Лучше делать чистую установку, но если хотите обновиться:
+Шаги обновления:
 
-- **Остановите** старый FileBrowser.
-- Сделайте копию **`filebrowser.db`** в безопасное место (желательно вне NAS), но не переносите - файл должен быть в директории, по желанию и файл конфига **`filebrowser.yml`** — но при обновлении не используйте его на версии 2.0.0, структура у них разная!
-- Установите и запустите новую версию — она автоматически попытается выполнить миграцию вашей базы.
-- После запуска приложения вам может понадобиться добавить в новый конфиг **`filebrowser.yml`** ваши тома (Volume), затем снова выдать эти тома каждому существующему пользователю.
+1. **Остановите** старый FileBrowser.
+2. Сделайте копию базы **filebrowser.db** и файла конфига **filebrowser.yml** в безопасное место (желательно вне NAS), но оригинальные файлы также должны остаться в директории для успешной автоматической миграции — не переносите их. При обновлении старый конфиг будет сохранён как **filebrowser.yml.legacy**, база данных конвертируется в **filebrowser.sqlite**, а старая база **filebrowser.db** останется на месте, но больше использоваться не будет.
+3. Установите и запустите новую версию через магазин приложений — она автоматически попытается выполнить миграцию вашей прошлой базы **.db** в новую **.sqlite**.
+4. После запуска приложения вам может понадобиться добавить в новый конфиг **filebrowser.yml** ваши тома (Volume), если вы кроме стандартных **Volume1** и **Volume2** создавали в конфиге другие тома, затем выдать эти нестандартные тома каждому существующему пользователю вновь.
+   Если тома были стандартными — ничего делать не надо!
 
 ## Содержимое папки
 
 | Путь | Описание |
 |---|---|
 | `FileBrowserQuantum_TOS7_TOS6_2.0.7.0-beta-x86_64.tpk` | Готовый пакет для установки в App Center |
+| `FileBrowserQuantum_TOS7_TOS6_2.0.7.0-beta-x86_64.zip` | Тот же пакет, завёрнутый в zip (внутри — сам `.tpk`), для удобной загрузки/распаковки |
+| `FileBrowserQuantum_TOS7_TOS6_2.0.7.1-beta-x86_64.tpk` | Тестовый пакет с оригинальным upstream-бинарником FileBrowser Quantum (без собственной пересборки приложения) |
+| `FileBrowserQuantum_TOS7_TOS6_2.0.1.1…2.0.6.0-beta-x86_64.tpk` | Предыдущие сборки (архив версий) |
 | `FileBrowserQuantumTOS/` | Дерево пакета (исходники payload): `config.ini`, `.lang`, `INFO`, `version`, `bin/`, `functions/`, `images/`, `init.d/`, `webui.bz2` |
 | `tools/build_tpk.ps1` | Скрипт сборки `.tpk` для Windows PowerShell |
 | `tools/build_tpk.sh` | Скрипт сборки `.tpk` для Linux / macOS (Bash) |
@@ -139,7 +143,7 @@ Copy-Item -Recurse -Force ..\backend\internal\web\dist\* ..\backend\internal\web
 
 # 2) Backend (Go) -> linux/amd64 бинарник (без тега mupdf, CGO не нужен)
 cd <src>\backend
-$env:GOTOOLCHAIN="go1.26.5"
+$env:GOTOOLCHAIN="go1.27.0"
 $env:GOOS="linux"; $env:GOARCH="amd64"; $env:CGO_ENABLED="0"
 go build -trimpath -o filebrowserquantum --ldflags="-w -s -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.CommitSHA=n/a' -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.Version=2.0.7-beta'" .
 
