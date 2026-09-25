@@ -2,8 +2,21 @@
 
 > **Язык:** Русский · [English](README.en.md)
 
-Готовый пакет **FileBrowser Quantum 2.0.8-beta** для x86_64 NAS TerraMaster (TOS6/TOS7).
-В этой папке — дерево пакета, инструменты сборки и всё необходимое для пересборки.
+<div align="center">
+
+[![Version](https://img.shields.io/badge/Версия-2.0.8beta-blue.svg)]()
+[![Platform](https://img.shields.io/badge/Платформа-TOS-blue.svg)]()
+[![License](https://img.shields.io/badge/Лицензия-Apache%202.0-blue.svg)](LICENSE)
+
+  <img width="150" alt="FileBrowser Quantum logo" src="https://github.com/user-attachments/assets/c40b22c9-33da-47b7-bc4c-ce69bb5cc174">
+  <h3>FileBrowser Quantum</h3>
+  Лучший бесплатный веб-файловый менеджер для самостоятельного хостинга.
+  <br/><br/>
+  <img width="800" alt="Список файлов в FileBrowser Quantum в тёмном режиме" src="/images/FileBrowserForTos.png">
+</div>
+
+- Готовый пакет **FileBrowser Quantum 2.0.8-beta** для x86_64 NAS TerraMaster (TOS6/TOS7).
+- В этом репозитории — релизы, дерево пакета, инструменты сборки и всё необходимое для пересборки.
 
 ## Авторы
 
@@ -11,7 +24,7 @@
 - **Кем обновлён до 2.0.8-beta:** [Mr712](https://github.com/byMr712?tab=repositories).
 - Пакет собран исключительно из упаковки оригинального модуля **1.2.1-stable** и исходников
   [FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser).
-  **Ничего не было вырезано и не добавлено** — обновлено только само приложение FileBrowser
+- **Ничего не было вырезано и не добавлено** — обновлено только само приложение FileBrowser
   Quantum до v2.0.8-beta и адаптирована его конфигурация.
   
 ## Отказ от ответственности
@@ -39,8 +52,8 @@
   
 ## Требования:
 
-- Для TOS 6 версии: 6.0.420 или выше.
-- Для TOS 7 версии: 7.0.0269 или выше
+- Для TOS 6 версии: 6.0.420 или выше (не надо устанавливать отдельно PHP)
+- Для TOS 7 версии: 7.0.0269 или выше (необходимо доустановить PHP 7.4)
   
 ## Обновляетесь с версии v1.x?
 

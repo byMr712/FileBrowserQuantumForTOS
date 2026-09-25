@@ -2,8 +2,21 @@
 
 > **Language:** English · [Русский](README.md)
 
-Built package **FileBrowser Quantum 2.0.8-beta** for TerraMaster x86_64 NAS (TOS6/TOS7).
-This folder contains the package tree, build tools, and everything needed to rebuild it.
+<div align="center">
+
+[![Version](https://img.shields.io/badge/Version-2.0.8beta-blue.svg)]()
+[![Platform](https://img.shields.io/badge/Platform-TOS-blue.svg)]()
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+
+  <img width="150" alt="FileBrowser Quantum logo" src="https://github.com/user-attachments/assets/c40b22c9-33da-47b7-bc4c-ce69bb5cc174">
+  <h3>FileBrowser Quantum</h3>
+  The best free self-hosted web file manager.
+  <br/><br/>
+  <img width="800" alt="File list in FileBrowser Quantum (dark mode)" src="/images/FileBrowserForTos.png">
+</div>
+
+- Ready-to-use **FileBrowser Quantum 2.0.8-beta** package for x86_64 TerraMaster NAS (TOS6/TOS7).
+- This repository contains releases, the package tree, build tools, and everything needed to rebuild the package.
 
 ## Credits
 
@@ -11,7 +24,7 @@ This folder contains the package tree, build tools, and everything needed to reb
 - **Updated to 2.0.8-beta by:** [Mr712](https://github.com/byMr712?tab=repositories).
 - This package is built solely from the original module **1.2.1-stable** packaging and the
   [FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser) source code.
-  **Nothing was removed from or added to the original module** — only the FileBrowser Quantum
+- **Nothing was removed from or added to the original module** — only the FileBrowser Quantum
   application itself was updated to v2.0.8-beta and its configuration adapted.
   
 ## Disclaimer
@@ -37,8 +50,8 @@ Support is provided on a "best effort" basis only.
   
 ## Requirements:
 
-- For TOS version 6: 6.0.420 or higher.
-- For TOS version 7: 7.0.0269 or higher.
+- For TOS version 6: 6.0.420 or higher (no need to install PHP separately)
+- For TOS version 7: 7.0.0269 or higher (PHP 7.4 must be installed)
   
 ## Upgrading from version v1.x?
 
