@@ -4,7 +4,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/Версия-2.0.8beta-blue.svg)]()
+[![Version](https://img.shields.io/badge/Версия-2.0.9beta-blue.svg)]()
 [![Platform](https://img.shields.io/badge/Платформа-TOS-blue.svg)]()
 [![License](https://img.shields.io/badge/Лицензия-Apache%202.0-blue.svg)](LICENSE)
 
@@ -15,17 +15,17 @@
   <img width="800" alt="Список файлов в FileBrowser Quantum в тёмном режиме" src="/images/FileBrowserForTos.png">
 </div>
 
-- Готовый пакет **FileBrowser Quantum 2.0.8-beta** для x86_64 NAS TerraMaster (TOS6/TOS7).
+- Готовый пакет **FileBrowser Quantum 2.0.9-beta** для x86_64 NAS TerraMaster (TOS6/TOS7).
 - В этом репозитории — релизы, дерево пакета, инструменты сборки и всё необходимое для пересборки.
 
 ## Авторы
 
 - **Автор оригинального модуля:** [OutkastM](https://tmnascommunity.eu/download/filebrowserquantum/) — TerraMaster Community Place.
-- **Кем обновлён до 2.0.8-beta:** [Mr712](https://github.com/byMr712?tab=repositories).
+- **Кем обновлён до 2.0.9-beta:** [Mr712](https://github.com/byMr712?tab=repositories).
 - Пакет собран исключительно из упаковки оригинального модуля **1.2.1-stable** и исходников
   [FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser).
 - **Ничего не было вырезано и не добавлено** — обновлено только само приложение FileBrowser
-  Quantum до v2.0.8-beta и адаптирована его конфигурация.
+  Quantum до v2.0.9-beta и адаптирована его конфигурация.
   
 ## Отказ от ответственности
 
@@ -33,7 +33,7 @@
 включая, но не ограничиваясь, подразумеваемыми гарантиями товарной пригодности, пригодности
 для конкретной цели и ненарушения прав.
 
-- Пакет — **бета**-сборка (2.0.8-beta) от участника сообщества и **не является** официальным
+- Пакет — **бета**-сборка (2.0.9-beta) от участника сообщества и **не является** официальным
   релизом TerraMaster или FileBrowser.
 - Используйте на свой страх и риск. Автор **не несёт ответственности** за потерю данных, сбои
   системы, простой или любые другие последствия установки и использования этого пакета.
@@ -69,8 +69,9 @@
 
 | Путь | Описание |
 |---|---|
-| `FileBrowserQuantum_TOS7_TOS6_2.0.8.0-beta-x86_64.tpk` | Готовый пакет для установки в App Center |
-| `FileBrowserQuantum_TOS7_TOS6_2.0.7.0-beta-x86_64.tpk` | Предыдущая сборка (архив) |
+| `FileBrowserQuantum_TOS7_TOS6_2.0.9.0-beta-x86_64.tpk` | Готовый пакет для установки в App Center |
+| `FileBrowserQuantum_TOS7_TOS6_2.0.9.0-beta-x86_64.zip` | Тот же пакет, завёрнутый в zip (внутри — сам `.tpk`), для удобной загрузки/распаковки |
+| `FileBrowserQuantum_TOS7_TOS6_2.0.8.0-beta-x86_64.tpk` | Предыдущая сборка (архив) |
 | `FileBrowserQuantum_TOS7_TOS6_2.0.7.0-beta-x86_64.zip` | Тот же пакет, завёрнутый в zip (внутри — сам `.tpk`), для удобной загрузки/распаковки |
 | `FileBrowserQuantum_TOS7_TOS6_2.0.7.1-beta-x86_64.tpk` | Тестовый пакет с оригинальным upstream-бинарником FileBrowser Quantum (без собственной пересборки приложения) |
 | `FileBrowserQuantum_TOS7_TOS6_2.0.1.1…2.0.6.0-beta-x86_64.tpk` | Предыдущие сборки (архив версий) |
@@ -130,7 +131,7 @@ pwsh .\tools\build_tpk.ps1
 5. имя файла и версия в заголовке берутся из `config.ini`.
 
 Имя результата — `<id>_TOS7_TOS6_<версия>[-<суффикс>]-<платформа>.tpk`, например
-`FileBrowserQuantum_TOS7_TOS6_2.0.8.0-beta-x86_64.tpk` (id, версия и платформа — из `config.ini`).
+`FileBrowserQuantum_TOS7_TOS6_2.0.9.0-beta-x86_64.tpk` (id, версия и платформа — из `config.ini`).
 
 Все пути по умолчанию — **относительные, от папки скрипта** `tools\`: дерево пакета
 `..\FileBrowserQuantumTOS`, результат `..\FileBrowserQuantum ... .tpk`.
@@ -140,7 +141,7 @@ pwsh .\tools\build_tpk.ps1
 Опции: `-PkgDir <путь>` (по умолчанию `..\FileBrowserQuantumTOS`),
 `-OutDir <куда положить .tpk>` (по умолчанию `..`), `-XzPath <путь к xz.exe>`,
 `-ReleaseTag <суффикс версии в имени файла>` (по умолчанию `beta`; для стабильного релиза
-`-ReleaseTag ''` → `FileBrowserQuantum_TOS7_TOS6_2.0.8.0-x86_64.tpk`).
+`-ReleaseTag ''` → `FileBrowserQuantum_TOS7_TOS6_2.0.9.0-x86_64.tpk`).
 
 ## Полная пересборка из исходников filebrowser
 
@@ -159,7 +160,7 @@ Copy-Item -Recurse -Force ..\backend\internal\web\dist\* ..\backend\internal\web
 cd <src>\backend
 $env:GOTOOLCHAIN="go1.27.0"
 $env:GOOS="linux"; $env:GOARCH="amd64"; $env:CGO_ENABLED="0"
-go build -trimpath -o filebrowserquantum --ldflags="-w -s -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.CommitSHA=n/a' -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.Version=2.0.8-beta'" .
+go build -trimpath -o filebrowserquantum --ldflags="-w -s -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.CommitSHA=n/a' -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.Version=2.0.9-beta'" .
 
 # 3) Заменить бинарник в дереве пакета
 Copy-Item backend\filebrowserquantum .\FileBrowserQuantumTOS\bin\program\filebrowserquantum
@@ -199,7 +200,7 @@ pwsh .\tools\build_tpk.ps1
 
 ```powershell
 # 1. md5 в заголовке должен совпадать с md5 payload
-$b=[IO.File]::ReadAllBytes("$pwd\FileBrowserQuantum_TOS7_TOS6_2.0.8.0-beta-x86_64.tpk")
+$b=[IO.File]::ReadAllBytes("$pwd\FileBrowserQuantum_TOS7_TOS6_2.0.9.0-beta-x86_64.tpk")
 # 2. payload извлекается и права/состав совпадают с деревом пакета
 tar -xf "$pwd\...tpk" --to-command=... # либо вырезать байты с offset 10240 и tar -tvf
 ```
