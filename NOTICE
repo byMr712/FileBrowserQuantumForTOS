@@ -18,3 +18,16 @@ The original TPK module 1.2.1-stable was rebuilt with the FileBrowser Quantum
 v2.1.0-beta source code (https://github.com/gtsteffaniak/filebrowser).
 Nothing was removed from or added to the original module besides updating the
 FileBrowser Quantum application itself and adapting the configuration for it.
+
+FFmpeg (ffmpeg/ffprobe, optional ffmpeg variant)
+=================================================
+The "-ffmpeg" package variant bundles static Linux x86_64 builds of ffmpeg and
+ffprobe by John Van Sickle (https://johnvansickle.com/ffmpeg/) under
+bin/ffmpeg/. These binaries enable video preview generation, video/audio
+duration metadata and embedded-subtitle extraction in FileBrowser Quantum.
+
+FFmpeg is licensed under the GNU General Public License v3.0 (GPLv3) with
+additional components under LGPLv2.1 and other licenses; see
+https://ffmpeg.org/legal.html for details. The bundled static builds are
+provided by John Van Sickle under GPLv3. Source code is available at
+https://ffmpeg.org/download.html and https://johnvansickle.com/ffmpeg/.

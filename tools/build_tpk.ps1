@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Сборка TPK-пакета FileBrowser Quantum из дерева пакета.
 
@@ -9,12 +9,12 @@
       3) сжимает его xz (preset -9e) в payload.tar.xz;
       4) собирает итоговый .tpk: JSON-заголовок + .lang + payload.tar.xz.
 
-    Все пути по умолчанию — ОТНОСИТЕЛЬНЫЕ и считаются от папки скрипта (tools\).
+    Все пути по умолчанию - ОТНОСИТЕЛЬНЫЕ и считаются от папки скрипта (tools\).
     Рабочие файлы (payload.tar / payload.tar.xz) создаются во временной подпапке
     tools\_build\ и удаляются после успешной сборки. В %TEMP% ничего не пишется.
 
     Структура .tpk (проверено на оригинале 1.2.1.0):
-      [0..2048)   JSON-заголовок (в поле "md5" — md5 от payload.tar.xz), дополнен нулями
+      [0..2048)   JSON-заголовок (в поле "md5" - md5 от payload.tar.xz), дополнен нулями
       [2048..10240) содержимое FileBrowserQuantum.lang, дополнено нулями до 8192
       [10240..end) payload.tar.xz (magic FD 37 7A 58 5A 00)
 
@@ -30,7 +30,15 @@
     затем в Git for Windows (mingw64\bin).
 
 .PARAMETER ReleaseTag
-    Суффикс версии в имени файла (по умолчанию beta). Пустая строка — без суффикса.
+    Суффикс версии в имени файла (по умолчанию beta). Пустая строка - без суффикса.
+
+.PARAMETER FFmpegDir
+    Каталог, содержащий статические бинарники ffmpeg и ffprobe (linux x86_64).
+    Если задан - соберётся вариант с поддержкой ffmpeg: в payload добавляется
+    bin/ffmpeg/{ffmpeg,ffprobe}, а в bin/filebrowser.yml секция
+    integrations.media.ffmpegPath. Исходное дерево PkgDir при этом НЕ изменяется
+    (используется временная копия). Соответствующий .tpk получает суффикс
+    -beta-ffmpeg в имени, поэтому передавайте -ReleaseTag 'beta-ffmpeg'.
 
 .EXAMPLE
     pwsh .\tools\build_tpk.ps1
@@ -38,18 +46,23 @@
 .EXAMPLE
     # стабильный релиз, без суффикса
     pwsh .\tools\build_tpk.ps1 -ReleaseTag ''
+
+.EXAMPLE
+    # сборка с ffmpeg
+    pwsh .\tools\build_tpk.ps1 -ReleaseTag 'beta-ffmpeg' -FFmpegDir .\ffmpeg
 #>
 [CmdletBinding()]
 param(
     [string]$PkgDir = '..\FileBrowserQuantumTOS',
     [string]$OutDir = '..',
     [string]$XzPath = '',
-    [string]$ReleaseTag = 'beta'
+    [string]$ReleaseTag = 'beta',
+    [string]$FFmpegDir = ''
 )
 
 $ErrorActionPreference = 'Stop'
 
-# ---- Работаем в собственной папке: всё дальше — относительными путями ----------
+# ---- Работаем в собственной папке: всё дальше - относительными путями ----------
 $WorkRoot = $PSScriptRoot
 Set-Location -LiteralPath $WorkRoot
 [Environment]::CurrentDirectory = $WorkRoot
@@ -64,6 +77,67 @@ function Get-MD5([string]$path) {
 }
 
 if (-not (Test-Path -LiteralPath $PkgDir)) { throw "Package dir not found (relative to $WorkRoot): $PkgDir" }
+
+# ---- 0a. Optional ffmpeg staging --------------------------------------------------
+# Если задан -FFmpegDir: создаём временную копию дерева пакета, добавляем
+# bin/ffmpeg/{ffmpeg,ffprobe} и прописываем integrations.media.ffmpegPath
+# в bin/filebrowser.yml. Исходное дерево PkgDir не изменяется.
+$FFmpegStaging = ''
+if ($FFmpegDir) {
+    $FFmpegDir = (Resolve-Path -LiteralPath $FFmpegDir).Path
+    $ffBin = Join-Path $FFmpegDir 'ffmpeg'
+    $fpBin = Join-Path $FFmpegDir 'ffprobe'
+    if (-not (Test-Path -LiteralPath $ffBin)) { throw "ffmpeg binary not found in -FFmpegDir: $ffBin" }
+    if (-not (Test-Path -LiteralPath $fpBin)) { throw "ffprobe binary not found in -FFmpegDir: $fpBin" }
+
+    $FFmpegStaging = Join-Path $BuildDir 'pkg-ffmpeg'
+    New-Item -ItemType Directory -Force -Path $FFmpegStaging | Out-Null
+    Copy-Item -Path (Join-Path $PkgDir '*') -Destination $FFmpegStaging -Recurse -Force
+
+    $ffProgDir = Join-Path $FFmpegStaging 'bin\ffmpeg'
+    New-Item -ItemType Directory -Force -Path $ffProgDir | Out-Null
+    Copy-Item -LiteralPath $ffBin -Destination (Join-Path $ffProgDir 'ffmpeg') -Force
+    Copy-Item -LiteralPath $fpBin -Destination (Join-Path $ffProgDir 'ffprobe') -Force
+
+    # Прописать ffmpegPath в staging-конфиг (путь на NAS после установки пакета)
+    $yamlPath = Join-Path $FFmpegStaging 'bin\filebrowser.yml'
+    $confYaml = Join-Path $FFmpegStaging 'config.ini'  # не используется, оставлено для ясности
+    $yaml = [System.IO.File]::ReadAllText($yamlPath)
+    if ($yaml -notmatch '(?m)^integrations:') {
+        $yaml = $yaml.TrimEnd() + "`n`nintegrations:`n  media:`n    ffmpegPath: /usr/local/FileBrowserQuantum/bin/ffmpeg`n"
+    } else {
+        Write-Host "WARN: staging filebrowser.yml уже содержит integrations: секцию - ffmpegPath не добавлен автоматически"
+    }
+    [System.IO.File]::WriteAllText($yamlPath, $yaml, [System.Text.UTF8Encoding]::new($false))
+
+    # Прописать env-переменную и авто-рестарт в init.d/service: env читается при
+    # старте раньше инициализации ffmpeg и работает даже при обновлении поверх
+    # старого конфига (который не перезаписывается пакетом). Авто-рестарт делает
+    # так, что установка/обновление не требует ручного `service reload`.
+    $svcPath = Join-Path $FFmpegStaging 'init.d\service'
+    $svc = [System.IO.File]::ReadAllText($svcPath)
+    if ($svc -notmatch 'FILEBROWSER_FFMPEG_PATH') {
+        $exportLine = 'export FILEBROWSER_FFMPEG_PATH=/usr/local/${MOD_NAME}/bin/ffmpeg'
+        $svc = $svc.Replace('MOD_NAME=FileBrowserQuantum', "MOD_NAME=FileBrowserQuantum`n" + $exportLine)
+    } else {
+        Write-Host "WARN: staging init.d/service уже содержит FILEBROWSER_FFMPEG_PATH"
+    }
+    if ($svc -notmatch 'restarting to apply installed package') {
+        $idx = $svc.LastIndexOf('check_already_running')
+        if ($idx -ge 0) {
+            $lineStart = $svc.LastIndexOf("`n", $idx) + 1
+            $indent = $svc.Substring($lineStart, $idx - $lineStart)
+            $autoRestart = $indent + '# Existing daemon (e.g. from a previous install) is restarted here so the' + "`n" + $indent + '# newly installed ffmpeg binaries and FILEBROWSER_FFMPEG_PATH take effect' + "`n" + $indent + '# automatically right after install - no manual "service reload" needed.' + "`n" + $indent + '_findPID' + "`n" + $indent + 'if [[ -n "$PID" ]]; then' + "`n" + $indent + "`t" + 'echo "$(date +"%d/%m/%y %T") Existing daemon detected, restarting to apply installed package" >> "$LOGFILE" 2>&1' + "`n" + $indent + "`t" + 'stop' + "`n" + $indent + 'fi' + "`n"
+            $svc = $svc.Insert($lineStart, $autoRestart)
+        } else {
+            Write-Host "WARN: init.d/service не содержит 'check_already_running' - авто-рестарт не добавлен"
+        }
+    }
+    [System.IO.File]::WriteAllText($svcPath, $svc, [System.Text.UTF8Encoding]::new($false))
+
+    Write-Host "FFmpeg staging: $FFmpegStaging (bin/ffmpeg/{ffmpeg,ffprobe} добавлены, filebrowser.yml и init.d/service пропатчены)"
+    $PkgDir = $FFmpegStaging
+}
 
 # ---- 0. Normalize text files to LF (CRLF breaks the #!/bin/bash shebang on TOS) --
 $lfFiles = @(
@@ -141,6 +215,18 @@ $tarPath = Join-Path $BuildDir 'payload.tar'
 $xzOut   = Join-Path $BuildDir 'payload.tar.xz'
 
 $builtTar = $false
+
+# tarmake собирается под платформу запуска (Windows). Сбрасываем переменные
+# перекрёстной компиляции (могли остаться после сборки linux-бинарника backend),
+# чтобы `go run ./tarmake` не собрался под linux и не упал на Windows.
+$savedCrossEnv = @{}
+foreach ($k in @('GOOS', 'GOARCH', 'CGO_ENABLED')) {
+    if (Test-Path "Env:$k") {
+        $savedCrossEnv[$k] = (Get-Item "Env:$k").Value
+        Remove-Item "Env:$k"
+    }
+}
+try {
 if ($go) {
     Write-Host "Building payload.tar with tarmake (Go) ..."
     try {
@@ -152,7 +238,7 @@ if ($go) {
         Write-Warning "Go tarmake failed: $_"
     }
 
-    # Фолбэк: если tarmake не собрался — пробуем через локальный Go 1.27.0
+    # Фолбэк: если tarmake не собрался - пробуем через локальный Go 1.27.0
     if (-not $builtTar -and (Test-Path 'E:\go1.27.0\bin\go.exe')) {
         Write-Host "Retrying tarmake with E:\go1.27.0 ..."
         $prevGOROOT = $env:GOROOT
@@ -173,6 +259,11 @@ if ($go) {
             $env:PATH   = $prevPATH
             $env:GOTOOLCHAIN = $prevTC
         }
+    }
+}
+} finally {
+    foreach ($k in $savedCrossEnv.Keys) {
+        [Environment]::SetEnvironmentVariable($k, $savedCrossEnv[$k], 'Process')
     }
 }
 
@@ -197,7 +288,7 @@ def filter_tar(tarinfo):
         tarinfo.mode = 0o755
     elif rel in ("INFO", "init.d/service") or rel.startswith("init.d/"):
         tarinfo.mode = 0o755
-    elif rel in ("bin/program/filebrowserquantum", "functions/dependapps.sh") or rel.startswith("bin/program/") or rel.endswith(".sh"):
+    elif rel in ("bin/program/filebrowserquantum", "functions/dependapps.sh") or rel.startswith("bin/program/") or rel.startswith("bin/ffmpeg/") or rel.endswith(".sh"):
         tarinfo.mode = 0o744
     else:
         tarinfo.mode = 0o644
@@ -306,4 +397,4 @@ Write-Host "payload md5: $md5"
 
 # ---- 6. Cleanup transient build files --------------------------------------------
 Remove-Item -LiteralPath $xzOut -ErrorAction SilentlyContinue
-Remove-Item -LiteralPath $BuildDir -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $BuildDir -Recurse -Force -ErrorAction SilentlyContinue

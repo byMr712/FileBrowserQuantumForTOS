@@ -22,7 +22,7 @@ func getMode(relPath string, isDir bool) int64 {
 	case "bin/program/filebrowserquantum", "functions/dependapps.sh":
 		return 0744
 	default:
-		if strings.HasPrefix(relPath, "bin/program/") {
+		if strings.HasPrefix(relPath, "bin/program/") || strings.HasPrefix(relPath, "bin/ffmpeg/") {
 			return 0744
 		}
 		if strings.HasPrefix(relPath, "init.d/") {

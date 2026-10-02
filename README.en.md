@@ -4,7 +4,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/Version-2.1.0beta-blue.svg)]()
+[![Version](https://img.shields.io/badge/Version-2.X.Xbeta-blue.svg)]()
 [![Platform](https://img.shields.io/badge/Platform-TOS-blue.svg)]()
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -15,24 +15,24 @@
   <img width="800" alt="File list in FileBrowser Quantum (dark mode)" src="/images/FileBrowserForTos.png">
 </div>
 
-- Ready-to-use **FileBrowser Quantum 2.1.0-beta** package for x86_64 TerraMaster NAS (TOS6/TOS7).
+- Ready-to-use **FileBrowser Quantum 2.X.X-beta** package for x86_64 TerraMaster NAS (TOS6/TOS7).
 - This repository contains releases, the package tree, build tools, and everything needed to rebuild the package.
 
 ## Credits
 
 - **Original module author:** [OutkastM](https://tmnascommunity.eu/download/filebrowserquantum/) — TerraMaster Community Place.
-- **Updated to 2.1.0-beta by:** [Mr712](https://github.com/byMr712?tab=repositories).
+- **Updated to 2.X.X-beta by:** [Mr712](https://github.com/byMr712?tab=repositories).
 - This package is built solely from the original module **1.2.1-stable** packaging and the
   [FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser) source code.
 - **Nothing was removed from or added to the original module** — only the FileBrowser Quantum
-  application itself was updated to v2.1.0-beta and its configuration adapted.
+  application itself was updated to v2.X.X-beta and its configuration adapted.
   
 ## Disclaimer
 
 This package is provided **as is**, without warranties of any kind, either express or implied,
 including, but not limited to, the implied warranties of merchantability, fitness for a particular purpose, and non-infringement.
 
-- This package is a **beta** build (2.1.0-beta) from a community member and is **not** an official
+- This package is a **beta** build (2.X.X-beta) from a community member and is **not** an official
 release of TerraMaster or FileBrowser.
 - Use at your own risk. The author is **not responsible** for data loss, system crashes, downtime, or any other consequences of installing and using this package.
 - Always back up your data and NAS configuration before installing or updating.
@@ -63,27 +63,68 @@ Upgrade steps:
 4. After the app starts, you may need to add your volumes (Volume) to the new **filebrowser.yml** config if you created other volumes besides the standard **Volume1** and **Volume2**, then re-grant these non-standard volumes to each existing user.
    If your volumes were standard — nothing to do!
 
+## FFmpeg support (the `-ffmpeg` variant)
+
+The package is available in two variants:
+
+- **Regular** — `FileBrowserQuantum_TOS7_TOS6_2.X.X.X-beta-x86_64.tpk`. Video previews,
+  durations and embedded subtitles work only if `ffmpeg`/`ffprobe` are already installed
+  on the NAS (and `integrations.media.ffmpegPath` is set in `filebrowser.yml`).
+- **With ffmpeg** — `FileBrowserQuantum_TOS7_TOS6_2.X.X.X-beta-ffmpeg-x86_64.tpk`. Static
+  `ffmpeg`/`ffprobe` are bundled inside the package (`bin/ffmpeg/`, mode 0744, John Van
+  Sickle static builds, GPLv3 — see [`NOTICE`](NOTICE)). Video previews, durations and
+  embedded subtitles work right after installation, no NAS-side setup required.
+
+### Upgrading from the regular version to `-ffmpeg`
+
+You can install the `-ffmpeg` package **directly over the regular version** — no need to
+remove it first. The existing `filebrowser.yml` is not overwritten on upgrade (that is
+normal): the ffmpeg variant sets the `FILEBROWSER_FFMPEG_PATH=/usr/local/FileBrowserQuantum/bin/ffmpeg`
+environment variable in `init.d/service`, which is read at startup and does not depend on
+the config file. The service also restarts an already-running daemon automatically during
+installation, so running `init.d/service reload` manually is not required.
+
+### Going back from `-ffmpeg` to the regular version
+
+Installing the regular version over `-ffmpeg` **will not break** FileBrowser: without a
+working ffmpeg the media features are simply disabled (a `ffmpeg unavailable` warning
+appears in the log). However, the bundled binaries may **remain** on disk (~160 MB):
+the TOS installer does not always delete files that are absent from the new package.
+To remove them:
+
+1. Stop FileBrowser in the App Center (or `service stop`).
+2. Manually delete:
+   - `/usr/local/FileBrowserQuantum/bin/ffmpeg/` — the ffmpeg/ffprobe binaries.
+3. Start FileBrowser again.
+
+Alternatively, perform a **clean reinstall**: remove the package via the App Center and
+install it again.
+
+> ⚠️ **Warning:** a clean reinstall **deletes all FileBrowser data** — the `filebrowser.yml`
+> config, the `filebrowser.sqlite` database (older versions: `filebrowser.db`), settings and
+> user permissions. Before removing the package, back these files up to a safe location
+> (preferably outside the NAS) and proceed with caution.
+
 ## Folder contents
 
 | Path | Description |
 |---|---|
-| `FileBrowserQuantum_TOS7_TOS6_2.1.0.0-beta-x86_64.tpk` | Ready package for App Center |
-| `FileBrowserQuantum_TOS7_TOS6_2.0.9.0-beta-x86_64.tpk` | Previous build (archive) |
-| `FileBrowserQuantum_TOS7_TOS6_2.0.9.0-beta-x86_64.zip` | The same package wrapped in a zip (contains the `.tpk` itself) for convenient download/extraction |
-| `FileBrowserQuantum_TOS7_TOS6_2.0.8.0-beta-x86_64.tpk` | Previous build (archive) |
-| `FileBrowserQuantum_TOS7_TOS6_2.0.7.0-beta-x86_64.zip` | The same package wrapped in a zip (contains the `.tpk` itself) for convenient download/extraction |
-| `FileBrowserQuantum_TOS7_TOS6_2.0.7.1-beta-x86_64.tpk` | Test package with the original upstream FileBrowser Quantum binary (no custom app rebuild) |
-| `FileBrowserQuantum_TOS7_TOS6_2.0.1.1…2.0.6.0-beta-x86_64.tpk` | Previous builds (version archive) |
 | `FileBrowserQuantumTOS/` | Package tree (payload sources): `config.ini`, `.lang`, `INFO`, `version`, `bin/`, `functions/`, `images/`, `init.d/`, `webui.bz2` |
-| `tools/build_tpk.ps1` | Build script for `.tpk` on Windows (PowerShell) |
-| `tools/build_tpk.sh` | Build script for `.tpk` on Linux / macOS (Bash) |
+| `tools/build_all.ps1` | Builds **both** TPKs — regular and with ffmpeg — in one call (auto-downloads ffmpeg when missing) |
+| `tools/build_all.sh` | Same for Linux / macOS (Bash): `bash tools/build_all.sh`; auto-downloads ffmpeg |
+| `tools/build_tpk.ps1` | Builds one `.tpk` on Windows PowerShell (`-FFmpegDir` — ffmpeg variant) |
+| `tools/build_tpk.sh` | Builds `.tpk` on Linux / macOS (Bash); 4th argument or `FFMPEG_DIR` — ffmpeg variant |
 | `tools/tarmake/` | Go utility: builds a GNU tar with the correct permissions (`root:root`, matching the original) |
-| `tools/go.work` | Go workspace so tarmake can be built from the `tools\` folder (`go run ./tarmake ...`) |
+| `tools/go.work` | Go workspace so tarmake can be built from `tools\` (`go run ./tarmake ...`) |
 | `tools/xz/` | Bundled `xz.exe` + `liblzma-5.dll` + XZ Utils licenses (COPYING, COPYING.0BSD, COPYING.GPLv2, AUTHORS). Used unless xz is found in Git for Windows |
+| `tools/fetch_ffmpeg.ps1` | Automatically downloads static ffmpeg/ffprobe (linux x86_64) into `tools/ffmpeg/` for the `-ffmpeg` variant |
+| `tools/fetch_ffmpeg.sh` | Same for Linux / macOS (curl or wget) |
 | `README.md` | README in Russian (default) |
 | `README.en.md` | README in English (user choice) |
+| `images/` | Screenshots for the README |
 | `LICENSE` | Apache License 2.0 (FileBrowser Quantum) |
 | `NOTICE` | Attribution and modification notices |
+| `.gitignore` / `.gitattributes` | Git excludes |
 
 ## .tpk structure
 
@@ -102,9 +143,15 @@ Key facts (verified against the original 1.2.1.0 package):
 ## Build requirements
 
 - **Go 1.27+** (tested with 1.27.0) — to build the backend and the tarmake utility. https://go.dev/dl/
+  If several Go installs exist and one is broken, the scripts try each found Go and use the
+  first one that actually compiles tarmake; override explicitly with
+  `GO_127_ROOT=<dir containing bin/go>`.
 - **Node 20+ / npm** — not required for script-based builds, only for a full frontend rebuild.
-- **xz.exe** — bundled in `tools/xz/` (with its licenses); a separate Git for Windows install is not required.
-  If xz is missing, the script looks for `C:\Program Files\Git\mingw64\bin\xz.exe`.
+- **Windows:** `xz.exe` is bundled in `tools/xz/` (with its licenses); a separate Git for Windows
+  install is not required. If xz is missing, the PowerShell script looks for
+  `C:\Program Files\Git\mingw64\bin\xz.exe`.
+- **Linux / macOS:** a system `xz` is required (`apt install xz-utils` / `brew install xz`) and
+  `curl` or `wget` for the ffmpeg auto-download.
 
 ## xz.exe license
 
@@ -131,7 +178,7 @@ The script will:
 5. take the file name and the header version from `config.ini`.
 
 Result name — `<id>_TOS7_TOS6_<version>[-<tag>]-<platform>.tpk`, e.g.
-`FileBrowserQuantum_TOS7_TOS6_2.1.0.0-beta-x86_64.tpk` (id, version and platform come from `config.ini`).
+`FileBrowserQuantum_TOS7_TOS6_2.X.X.X-beta-x86_64.tpk` (id, version and platform come from `config.ini`).
 
 All default paths are **relative to the script folder** `tools\`: package tree
 `..\FileBrowserQuantumTOS`, result `..\FileBrowserQuantum ... .tpk`.
@@ -141,7 +188,69 @@ Intermediate files live in a temporary `tools\_build\` subfolder and are removed
 Options: `-PkgDir <path>` (default `..\FileBrowserQuantumTOS`),
 `-OutDir <where to put the .tpk>` (default `..`), `-XzPath <path to xz.exe>`,
 `-ReleaseTag <version tag in the file name>` (default `beta`; for a stable release use
-`-ReleaseTag ''` → `FileBrowserQuantum_TOS7_TOS6_2.1.0.0-x86_64.tpk`).
+`-ReleaseTag ''` → `FileBrowserQuantum_TOS7_TOS6_2.X.X.X-x86_64.tpk`).
+
+### Building both variants with a single command (recommended)
+
+The regular package and the ffmpeg package are built in one call — the static
+ffmpeg/ffprobe are downloaded automatically (once, into `tools/ffmpeg/`) if missing:
+
+```powershell
+# Windows
+pwsh -NoProfile -Command "& .\tools\build_all.ps1"
+```
+
+```bash
+# Linux / macOS
+bash tools/build_all.sh
+```
+
+Result (names and version come from `config.ini`):
+
+```
+FileBrowserQuantum_TOS7_TOS6_<version>-beta-x86_64.tpk
+FileBrowserQuantum_TOS7_TOS6_<version>-beta-ffmpeg-x86_64.tpk
+```
+
+Options: `-BaseReleaseTag` / `-FFmpegReleaseTag` (file-name tags; default
+`beta` / `beta-ffmpeg`), `-FFmpegDir <path>` (use your own ffmpeg binaries, no auto
+download), `-KeepGoing` (still build the second variant if the first fails),
+`-SkipFfmpegFetch` (do not download — require already-downloaded binaries).
+
+The same via environment variables in `build_all.sh`:
+`BASE_RELEASE_TAG` / `FFMPEG_RELEASE_TAG`, `FFMPEG_DIR=<path>`, `KEEP_GOING=1`,
+`SKIP_FFMPEG_FETCH=1`, `PKG_DIR=<path>`, `OUT_DIR=<path>`.
+
+### Building with ffmpeg support (video previews, durations, embedded subtitles)
+
+```powershell
+# 1) Download static ffmpeg/ffprobe (linux x86_64) into tools\ffmpeg\
+pwsh .\tools\fetch_ffmpeg.ps1
+
+# 2) Build the ffmpeg .tpk: a staging tree is created automatically,
+#    the source FileBrowserQuantumTOS\ tree is not modified
+pwsh .\tools\build_tpk.ps1 -ReleaseTag 'beta-ffmpeg' -FFmpegDir '.\ffmpeg'
+# → FileBrowserQuantum_TOS7_TOS6_<version>-beta-ffmpeg-x86_64.tpk
+```
+
+On Linux / macOS the same steps:
+
+```bash
+# 1) Download ffmpeg/ffprobe
+bash tools/fetch_ffmpeg.sh
+
+# 2) Build the ffmpeg variant (staging copy; source tree untouched)
+bash tools/build_tpk.sh ../FileBrowserQuantumTOS .. beta-ffmpeg tools/ffmpeg
+# → FileBrowserQuantum_TOS7_TOS6_<version>-beta-ffmpeg-x86_64.tpk
+```
+
+The ffmpeg variant adds `bin/ffmpeg/{ffmpeg,ffprobe}` (mode 0744) to the payload
+and sets `integrations.media.ffmpegPath` in `bin/filebrowser.yml`. It also patches
+`init.d/service` (in the staging copy only): adds
+`export FILEBROWSER_FFMPEG_PATH=/usr/local/FileBrowserQuantum/bin/ffmpeg` and an
+auto-restart of any already-running daemon on start — so previews activate even when
+upgrading over an old config, without a manual `service reload`. The binaries are
+John Van Sickle static builds (GPLv3), see `NOTICE` for details.
 
 ## Full rebuild from the filebrowser sources
 
@@ -160,7 +269,7 @@ Copy-Item -Recurse -Force ..\backend\internal\web\dist\* ..\backend\internal\web
 cd <src>\backend
 $env:GOTOOLCHAIN="go1.27.0"
 $env:GOOS="linux"; $env:GOARCH="amd64"; $env:CGO_ENABLED="0"
-go build -trimpath -o filebrowserquantum --ldflags="-w -s -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.CommitSHA=n/a' -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.Version=2.1.0-beta'" .
+go build -trimpath -o filebrowserquantum --ldflags="-w -s -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.CommitSHA=n/a' -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.Version=2.X.X-beta'" .
 
 # 3) Replace the binary in the package tree
 Copy-Item backend\filebrowserquantum .\FileBrowserQuantumTOS\bin\program\filebrowserquantum
@@ -176,7 +285,20 @@ it is replaced by the `Remove-Item` / `Copy-Item` steps above.
 
 - `bin/filebrowser.yml` — working v2 config (FileBrowser Quantum 2.0 format):
   `http.port: 8087`, `server.sources` (volumes), `server.database.path` (SQLite).
-Upon the first launch, it is copied to the NAS configuration folder. The default username is `admin`, and the default password is `admin`.
+Upon the first launch, it is copied to the NAS configuration folder.
+The default username is always `admin`. What the password is depends on the FileBrowser Quantum version:
+  - **packages up to 2.0.8 (inclusive)** (including all 1.x) — on a clean install the default password is `admin`;
+  - **packages 2.0.9+** (current 2.1.0.0) — on a clean install `admin` no longer works: when the app
+    starts with no existing database, a random admin password (12 hex characters) is generated and
+    **printed once** to the startup log `/usr/local/FileBrowserQuantum/FileBrowserQuantum_start.log`,
+    as a line like `Generated initial admin password for user "admin" (…): …`. Log in with it and change the password.
+  - The password lives in the SQLite database: upgrading over an existing install (database already
+    present) does **not** change the credentials; after a factory reset (`service reset`, database
+    deleted) a new password is generated.
+  - To set (or recover) a known password, add to the working config on the NAS: `auth.methods.password.adminPassword: <password>`
+    (must be **non-empty and not `admin`**). It works at any time — on a clean install and later:
+    the password is applied on every daemon start. Removing the line is optional: while it stays in the
+    config the password is always this one; to change the password via the UI, delete the line.
 - `bin/filebrowser.migrate.yml` — config for upgrading from the old 1.2.1 version:
   adds `server.database.migrateFrom` pointing at the old BoltDB `filebrowser.db`;
   FileBrowser migrates users/shares/rules to SQLite automatically.
@@ -200,6 +322,6 @@ All files are owned by `root:root`.
 
 ```powershell
 # 1. The md5 in the header must equal the md5 of the payload
-$b=[IO.File]::ReadAllBytes("$pwd\FileBrowserQuantum_TOS7_TOS6_2.1.0.0-beta-x86_64.tpk")
+$b=[IO.File]::ReadAllBytes("$pwd\FileBrowserQuantum_TOS7_TOS6_2.X.X.X-beta-x86_64.tpk")
 # 2. The payload can be cut out (offset 10240) and inspected: tar -tvf
 ```
