@@ -4,7 +4,7 @@
 
 <div align="center">
 
-[![Version](https://img.shields.io/badge/Version-2.0.9beta-blue.svg)]()
+[![Version](https://img.shields.io/badge/Version-2.1.0beta-blue.svg)]()
 [![Platform](https://img.shields.io/badge/Platform-TOS-blue.svg)]()
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -15,24 +15,24 @@
   <img width="800" alt="File list in FileBrowser Quantum (dark mode)" src="/images/FileBrowserForTos.png">
 </div>
 
-- Ready-to-use **FileBrowser Quantum 2.0.9-beta** package for x86_64 TerraMaster NAS (TOS6/TOS7).
+- Ready-to-use **FileBrowser Quantum 2.1.0-beta** package for x86_64 TerraMaster NAS (TOS6/TOS7).
 - This repository contains releases, the package tree, build tools, and everything needed to rebuild the package.
 
 ## Credits
 
 - **Original module author:** [OutkastM](https://tmnascommunity.eu/download/filebrowserquantum/) — TerraMaster Community Place.
-- **Updated to 2.0.9-beta by:** [Mr712](https://github.com/byMr712?tab=repositories).
+- **Updated to 2.1.0-beta by:** [Mr712](https://github.com/byMr712?tab=repositories).
 - This package is built solely from the original module **1.2.1-stable** packaging and the
   [FileBrowser Quantum](https://github.com/gtsteffaniak/filebrowser) source code.
 - **Nothing was removed from or added to the original module** — only the FileBrowser Quantum
-  application itself was updated to v2.0.9-beta and its configuration adapted.
+  application itself was updated to v2.1.0-beta and its configuration adapted.
   
 ## Disclaimer
 
 This package is provided **as is**, without warranties of any kind, either express or implied,
 including, but not limited to, the implied warranties of merchantability, fitness for a particular purpose, and non-infringement.
 
-- This package is a **beta** build (2.0.9-beta) from a community member and is **not** an official
+- This package is a **beta** build (2.1.0-beta) from a community member and is **not** an official
 release of TerraMaster or FileBrowser.
 - Use at your own risk. The author is **not responsible** for data loss, system crashes, downtime, or any other consequences of installing and using this package.
 - Always back up your data and NAS configuration before installing or updating.
@@ -67,7 +67,8 @@ Upgrade steps:
 
 | Path | Description |
 |---|---|
-| `FileBrowserQuantum_TOS7_TOS6_2.0.9.0-beta-x86_64.tpk` | Ready package for App Center |
+| `FileBrowserQuantum_TOS7_TOS6_2.1.0.0-beta-x86_64.tpk` | Ready package for App Center |
+| `FileBrowserQuantum_TOS7_TOS6_2.0.9.0-beta-x86_64.tpk` | Previous build (archive) |
 | `FileBrowserQuantum_TOS7_TOS6_2.0.9.0-beta-x86_64.zip` | The same package wrapped in a zip (contains the `.tpk` itself) for convenient download/extraction |
 | `FileBrowserQuantum_TOS7_TOS6_2.0.8.0-beta-x86_64.tpk` | Previous build (archive) |
 | `FileBrowserQuantum_TOS7_TOS6_2.0.7.0-beta-x86_64.zip` | The same package wrapped in a zip (contains the `.tpk` itself) for convenient download/extraction |
@@ -130,7 +131,7 @@ The script will:
 5. take the file name and the header version from `config.ini`.
 
 Result name — `<id>_TOS7_TOS6_<version>[-<tag>]-<platform>.tpk`, e.g.
-`FileBrowserQuantum_TOS7_TOS6_2.0.9.0-beta-x86_64.tpk` (id, version and platform come from `config.ini`).
+`FileBrowserQuantum_TOS7_TOS6_2.1.0.0-beta-x86_64.tpk` (id, version and platform come from `config.ini`).
 
 All default paths are **relative to the script folder** `tools\`: package tree
 `..\FileBrowserQuantumTOS`, result `..\FileBrowserQuantum ... .tpk`.
@@ -140,7 +141,7 @@ Intermediate files live in a temporary `tools\_build\` subfolder and are removed
 Options: `-PkgDir <path>` (default `..\FileBrowserQuantumTOS`),
 `-OutDir <where to put the .tpk>` (default `..`), `-XzPath <path to xz.exe>`,
 `-ReleaseTag <version tag in the file name>` (default `beta`; for a stable release use
-`-ReleaseTag ''` → `FileBrowserQuantum_TOS7_TOS6_2.0.9.0-x86_64.tpk`).
+`-ReleaseTag ''` → `FileBrowserQuantum_TOS7_TOS6_2.1.0.0-x86_64.tpk`).
 
 ## Full rebuild from the filebrowser sources
 
@@ -159,7 +160,7 @@ Copy-Item -Recurse -Force ..\backend\internal\web\dist\* ..\backend\internal\web
 cd <src>\backend
 $env:GOTOOLCHAIN="go1.27.0"
 $env:GOOS="linux"; $env:GOARCH="amd64"; $env:CGO_ENABLED="0"
-go build -trimpath -o filebrowserquantum --ldflags="-w -s -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.CommitSHA=n/a' -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.Version=2.0.9-beta'" .
+go build -trimpath -o filebrowserquantum --ldflags="-w -s -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.CommitSHA=n/a' -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.Version=2.1.0-beta'" .
 
 # 3) Replace the binary in the package tree
 Copy-Item backend\filebrowserquantum .\FileBrowserQuantumTOS\bin\program\filebrowserquantum
@@ -199,6 +200,6 @@ All files are owned by `root:root`.
 
 ```powershell
 # 1. The md5 in the header must equal the md5 of the payload
-$b=[IO.File]::ReadAllBytes("$pwd\FileBrowserQuantum_TOS7_TOS6_2.0.9.0-beta-x86_64.tpk")
+$b=[IO.File]::ReadAllBytes("$pwd\FileBrowserQuantum_TOS7_TOS6_2.1.0.0-beta-x86_64.tpk")
 # 2. The payload can be cut out (offset 10240) and inspected: tar -tvf
 ```
