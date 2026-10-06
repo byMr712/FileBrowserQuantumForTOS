@@ -288,7 +288,7 @@ it is replaced by the `Remove-Item` / `Copy-Item` steps above.
 Upon the first launch, it is copied to the NAS configuration folder.
 The default username is always `admin`. What the password is depends on the FileBrowser Quantum version:
   - **packages up to 2.0.8 (inclusive)** (including all 1.x) — on a clean install the default password is `admin`;
-  - **packages 2.0.9+** (current 2.1.0.0) — on a clean install `admin` no longer works: when the app
+  - **packages 2.0.9+** (current 2.1.0.1) — on a clean install `admin` no longer works: when the app
     starts with no existing database, a random admin password (12 hex characters) is generated and
     **printed once** to the startup log `/usr/local/FileBrowserQuantum/FileBrowserQuantum_start.log`,
     as a line like `Generated initial admin password for user "admin" (…): …`. Log in with it and change the password.
