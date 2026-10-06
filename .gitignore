@@ -21,8 +21,5 @@ Desktop.ini
 # Official sources
 sources*/
 
-# Local instructions (не коммитить)
-AGENTS.md
-
 # Downloaded ffmpeg/ffprobe static binaries (fetch via tools/fetch_ffmpeg.ps1)
 tools/ffmpeg/
