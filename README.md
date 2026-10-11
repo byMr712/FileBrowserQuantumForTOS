@@ -114,6 +114,8 @@
 | `tools/build_all.sh` | То же для Linux / macOS (Bash): `bash tools/build_all.sh`; скачивание ffmpeg автоматически |
 | `tools/build_tpk.ps1` | Сборка одного `.tpk` на Windows PowerShell (`-FFmpegDir` — ffmpeg-вариант) |
 | `tools/build_tpk.sh` | Сборка `.tpk` на Linux / macOS (Bash); 4-й аргумент или `FFMPEG_DIR` — ffmpeg-вариант |
+| `tools/build_app.ps1` | Полная пересборка приложения из `sources\` (frontend + backend) с автоправкой i18n; кладёт бинарник в дерево пакета |
+| `tools/build_app.sh` | То же для Linux / macOS (Bash): `bash tools/build_app.sh` |
 | `tools/tarmake/` | Go-утилита: создаёт GNU-tar с нужными правами (`root:root`, права как в оригинале) |
 | `tools/go.work` | Go workspace: позволяет собирать tarmake из папки `tools\` (`go run ./tarmake ...`) |
 | `tools/xz/` | Вложенный `xz.exe` + `liblzma-5.dll` + лицензии XZ Utils (COPYING, COPYING.0BSD, COPYING.GPLv2, AUTHORS). Используется, если нет xz в Git for Windows |
@@ -252,32 +254,68 @@ bash tools/build_tpk.sh ../FileBrowserQuantumTOS .. beta-ffmpeg tools/ffmpeg
 
 ## Полная пересборка из исходников filebrowser
 
-Исходники backend/frontend лежат отдельно, например в папке `sources/`.
+Исходники backend/frontend лежат отдельно, например в папке `sources/`
+(она в `.gitignore` — положите туда исходники нужного релиза апстрима).
+
+Рекомендуемый способ — одной командой:
+
+```powershell
+pwsh .\tools\build_app.ps1 -GoRoot E:\go1.27.0      # Windows, Go 1.27+
+bash tools/build_app.sh                             # Linux / macOS
+```
+
+Скрипт сам: применяет правки к исходникам апстрима (идемпотентно), собирает frontend
+в `backend/internal/web/embed`, собирает backend (Go, linux/amd64) и кладёт бинарник в
+`FileBrowserQuantumTOS/bin/program/filebrowserquantum`, а затем проверяет результат
+(языковые чанки + версия в бинарнике) и падает с ошибкой, если что-то не так.
+
+Версия нигде не хардкодится: дерево/`config.ini` — `2.1.1.0`, версия приложения в
+бинарнике — `<версия>-beta` (`2.1.1.0-beta`). После этого соберите пакеты:
+
+```powershell
+pwsh .\tools\build_all.ps1
+```
+
+### Почему нужна правка i18n (важно)
+
+Начиная с апстрима **v2.1.1** frontend собирается Vite 8 на rolldown, а его
+`import.meta.glob` **не поддерживает extglob** `!(...)`. Апстрим использует
+`import.meta.glob('./!(en).json')`, из-за чего карта локалей получается пустой:
+языковые чанки не попадают в бинарник и интерфейс **всегда английский**.
+`build_app` меняет шаблон на `'./*.json'` и возвращает все 25 языков; правка
+идемпотентна и применяется заново после каждого обновления `sources/`.
+
+### Ручная сборка (без скрипта)
+
 Порядок:
 
 ```powershell
 # 1) Frontend (Vue3) -> backend/internal/web/embed
 cd <src>\frontend
 npm install --no-audit --no-fund
+# ВАЖНО: при ручной сборке примените правку i18n вручную (см. выше) — иначе
+# бинарник соберётся только с английским языком
 Remove-Item -Recurse -Force ..\backend\internal\web\embed\*   # npm-скрипт "build" использует rm -rf (не работает в cmd)
 npm run build:docker                                          # vite build -> ../backend/internal/web/dist
 Copy-Item -Recurse -Force ..\backend\internal\web\dist\* ..\backend\internal\web\embed\
 
 # 2) Backend (Go) -> linux/amd64 бинарник (без тега mupdf, CGO не нужен)
 cd <src>\backend
-$env:GOTOOLCHAIN="go1.27.0"
 $env:GOOS="linux"; $env:GOARCH="amd64"; $env:CGO_ENABLED="0"
-go build -trimpath -o filebrowserquantum --ldflags="-w -s -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.CommitSHA=n/a' -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.Version=2.X.X-beta'" .
+# <версия> возьмите из FileBrowserQuantumTOS\version (в этом дереве — 2.1.1.0)
+go build -trimpath -o filebrowserquantum --ldflags="-w -s -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.Version=<версия>-beta'" .
 
 # 3) Заменить бинарник в дереве пакета
 Copy-Item backend\filebrowserquantum .\FileBrowserQuantumTOS\bin\program\filebrowserquantum
 
-# 4) Пересобрать TPK
-pwsh .\tools\build_tpk.ps1
+# 4) Пересобрать оба TPK (обычный и с ffmpeg)
+pwsh .\tools\build_all.ps1
 ```
 
 Примечание: `npm run build` в `package.json` вызывает `rm -rf` и `cp -r` (Unix-команды),
-поэтому под Windows его заменяют шаги с `Remove-Item` / `Copy-Item` выше.
+поэтому под Windows берут `npm run build:docker` (чистый `vite build`) и копируют `dist`
+в `embed` вручную, как в шагах выше. И не забудьте про правку i18n — без неё бинарник
+соберётся с одним английским языком.
 
 ## Конфигурация приложения
 
@@ -286,7 +324,7 @@ pwsh .\tools\build_tpk.ps1
   При первом запуске копируется в папку конфига NAS.
   Логин по умолчанию — всегда `admin`. Пароль зависит от версии FileBrowser Quantum:
     - **пакеты до 2.0.8 включительно** (в т.ч. все 1.x) — при чистой установке пароль `admin`;
-    - **пакеты 2.0.9+** (текущий 2.1.0.1) — на чистой установке пароль `admin` больше не действует:
+    - **пакеты 2.0.9+** (текущий 2.1.1.0) — на чистой установке пароль `admin` больше не действует:
       при первом старте без базы генерируется случайный пароль администратора (12 hex-символов)
       и **один раз** печатается в лог запуска `/usr/local/FileBrowserQuantum/FileBrowserQuantum_start.log`,
       строка вида `Generated initial admin password for user "admin" (…): …`. Войдите с ним и смените пароль.

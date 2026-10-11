@@ -114,6 +114,8 @@ install it again.
 | `tools/build_all.sh` | Same for Linux / macOS (Bash): `bash tools/build_all.sh`; auto-downloads ffmpeg |
 | `tools/build_tpk.ps1` | Builds one `.tpk` on Windows PowerShell (`-FFmpegDir` — ffmpeg variant) |
 | `tools/build_tpk.sh` | Builds `.tpk` on Linux / macOS (Bash); 4th argument or `FFMPEG_DIR` — ffmpeg variant |
+| `tools/build_app.ps1` | Full app rebuild from `sources\` (frontend + backend) with the i18n fix applied automatically; installs the binary into the package tree |
+| `tools/build_app.sh` | Same for Linux / macOS (Bash): `bash tools/build_app.sh` |
 | `tools/tarmake/` | Go utility: builds a GNU tar with the correct permissions (`root:root`, matching the original) |
 | `tools/go.work` | Go workspace so tarmake can be built from `tools\` (`go run ./tarmake ...`) |
 | `tools/xz/` | Bundled `xz.exe` + `liblzma-5.dll` + XZ Utils licenses (COPYING, COPYING.0BSD, COPYING.GPLv2, AUTHORS). Used unless xz is found in Git for Windows |
@@ -254,32 +256,68 @@ John Van Sickle static builds (GPLv3), see `NOTICE` for details.
 
 ## Full rebuild from the filebrowser sources
 
-The backend/frontend sources live separately, e.g. in the `sources/` folder.
+The backend/frontend sources live separately, e.g. in the `sources/` folder
+(it is in `.gitignore` — put the sources of the upstream release there).
+
+Recommended — one command:
+
+```powershell
+pwsh .\tools\build_app.ps1 -GoRoot E:\go1.27.0      # Windows, Go 1.27+
+bash tools/build_app.sh                             # Linux / macOS
+```
+
+The script applies the upstream source fixes (idempotent), builds the frontend into
+`backend/internal/web/embed`, builds the backend (Go, linux/amd64), copies the binary to
+`FileBrowserQuantumTOS/bin/program/filebrowserquantum` and then verifies the result
+(locale chunks + version inside the binary), failing loudly if anything is off.
+
+The version is never hardcoded: the tree/`config.ini` is `2.1.1.0`, the app version in the
+binary is `<version>-beta` (`2.1.1.0-beta`). Then build the packages:
+
+```powershell
+pwsh .\tools\build_all.ps1
+```
+
+### Why the i18n fix is required (important)
+
+Since upstream **v2.1.1** the frontend is built with Vite 8 (rolldown), whose
+`import.meta.glob` does **not support the extglob** `!(...)`. Upstream uses
+`import.meta.glob('./!(en).json')`, so the locale map silently becomes empty: the locale
+chunks never reach the binary and the UI is **always English**. `build_app` changes the
+pattern to `'./*.json'` and restores all 25 languages; the fix is idempotent and is
+re-applied after every `sources/` update.
+
+### Manual build (without the script)
+
 Steps:
 
 ```powershell
 # 1) Frontend (Vue3) -> backend/internal/web/embed
 cd <src>\frontend
 npm install --no-audit --no-fund
+# IMPORTANT: when building manually, apply the i18n fix yourself (see above) -
+# otherwise the binary will be English-only
 Remove-Item -Recurse -Force ..\backend\internal\web\embed\*   # npm "build" script uses rm -rf (does not work in cmd)
 npm run build:docker                                          # vite build -> ../backend/internal/web/dist
 Copy-Item -Recurse -Force ..\backend\internal\web\dist\* ..\backend\internal\web\embed\
 
 # 2) Backend (Go) -> linux/amd64 binary (no mupdf tag, CGO not needed)
 cd <src>\backend
-$env:GOTOOLCHAIN="go1.27.0"
 $env:GOOS="linux"; $env:GOARCH="amd64"; $env:CGO_ENABLED="0"
-go build -trimpath -o filebrowserquantum --ldflags="-w -s -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.CommitSHA=n/a' -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.Version=2.X.X-beta'" .
+# <version> comes from FileBrowserQuantumTOS\version (2.1.1.0 in this tree)
+go build -trimpath -o filebrowserquantum --ldflags="-w -s -X 'github.com/gtsteffaniak/filebrowser/backend/internal/version.Version=<version>-beta'" .
 
 # 3) Replace the binary in the package tree
 Copy-Item backend\filebrowserquantum .\FileBrowserQuantumTOS\bin\program\filebrowserquantum
 
-# 4) Rebuild the TPK
-pwsh .\tools\build_tpk.ps1
+# 4) Rebuild both TPKs (regular and ffmpeg)
+pwsh .\tools\build_all.ps1
 ```
 
-Note: `npm run build` in `package.json` calls `rm -rf` and `cp -r` (Unix commands), so under Windows
-it is replaced by the `Remove-Item` / `Copy-Item` steps above.
+Note: `npm run build` in `package.json` calls `rm -rf` and `cp -r` (Unix commands), so under
+Windows use `npm run build:docker` (plain `vite build`) and copy `dist` into `embed` manually,
+as in the steps above. And do not forget the i18n fix — without it the binary will be
+English-only.
 
 ## Application configuration
 
@@ -288,7 +326,7 @@ it is replaced by the `Remove-Item` / `Copy-Item` steps above.
 Upon the first launch, it is copied to the NAS configuration folder.
 The default username is always `admin`. What the password is depends on the FileBrowser Quantum version:
   - **packages up to 2.0.8 (inclusive)** (including all 1.x) — on a clean install the default password is `admin`;
-  - **packages 2.0.9+** (current 2.1.0.1) — on a clean install `admin` no longer works: when the app
+  - **packages 2.0.9+** (current 2.1.1.0) — on a clean install `admin` no longer works: when the app
     starts with no existing database, a random admin password (12 hex characters) is generated and
     **printed once** to the startup log `/usr/local/FileBrowserQuantum/FileBrowserQuantum_start.log`,
     as a line like `Generated initial admin password for user "admin" (…): …`. Log in with it and change the password.
