@@ -2,7 +2,8 @@
 tools/_build/
 
 # Built package artifact — generate it with build_tpk.ps1 and attach to GitHub Releases
-*.tpk
+FileBrowserQuantum_TOS7_TOS6**.tpk
+FileBrowserQuantum_TOS7_TOS6*.zip
 
 # Local Go build output (only relevant if you run `go build`, the script uses `go run`)
 tools/tarmake/tarmake.exe
