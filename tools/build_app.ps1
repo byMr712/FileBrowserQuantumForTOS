@@ -70,7 +70,7 @@ $ErrorActionPreference = 'Stop'
 
 # Ожидаемые имена языковых чанков: Vite 8 (rolldown) и Vite 6.
 # 'en' отдельным чанком не становится (он статически импортирован), поэтому порог 20.
-$LocaleChunkPattern = '^(virtual_intlify-i18n-\d+|ar|bg|cz|de|el|es|fr|he|hu|it|ja|ko|nl|nl-be|pl|pt|pt-br|ro|ru|sk|sv-se|tr|ua|zh-cn|zh-tw)-.*\.js(\.gz)?$'
+$LocaleChunkPattern = '^(virtual_intlify-i18n-\d+|ar|bg|cz|de|el|es|eu|fr|he|hu|it|ja|ko|nl|nl-be|pl|pt|pt-br|ro|ru|sk|sv-se|tr|ua|zh-cn|zh-tw)-.*\.js(\.gz)?$'
 $MinLocaleChunks = 20
 
 function Write-Head([string]$Text) { Write-Host ''; Write-Host "==> $Text" -ForegroundColor Cyan }

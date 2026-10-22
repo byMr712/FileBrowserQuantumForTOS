@@ -51,7 +51,7 @@ SKIP_BACKEND="${SKIP_BACKEND:-0}"
 PATCH_ONLY="${PATCH_ONLY:-0}"
 
 MIN_LOCALE_CHUNKS=20
-LOCALE_RE='^(virtual_intlify-i18n-[0-9]+|ar|bg|cz|de|el|es|fr|he|hu|it|ja|ko|nl|nl-be|pl|pt|pt-br|ro|ru|sk|sv-se|tr|ua|zh-cn|zh-tw)-.*\.js(\.gz)?$'
+LOCALE_RE='^(virtual_intlify-i18n-[0-9]+|ar|bg|cz|de|el|es|eu|fr|he|hu|it|ja|ko|nl|nl-be|pl|pt|pt-br|ro|ru|sk|sv-se|tr|ua|zh-cn|zh-tw)-.*\.js(\.gz)?$'
 
 head_line() { echo; echo "==> $1"; }
 ok_line() { echo "    $1"; }
