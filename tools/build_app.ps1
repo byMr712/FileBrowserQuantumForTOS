@@ -14,7 +14,8 @@
          поддерживает extglob "!(...)". Шаблон молча превращается в пустую карту,
          языковые чанки не попадают в бинарник, и интерфейс ВСЕГДА английский.
          Правка возвращает все языки.
-      2) Собирает frontend (Vue 3 + Vite) в backend\internal\web\embed.
+      2) Собирает frontend (Vue 3 + Vite) в каталог из //go:embed
+          (internal\web\embed до v2.2.0, internal\web\dist с v2.2.0).
       3) Собирает backend (Go, linux/amd64, CGO выключен) и копирует бинарник в
          FileBrowserQuantumTOS\bin\program\filebrowserquantum.
       4) Проверяет результат: в сборке frontend должны быть языковые чанки, а
@@ -70,7 +71,7 @@ $ErrorActionPreference = 'Stop'
 
 # Ожидаемые имена языковых чанков: Vite 8 (rolldown) и Vite 6.
 # 'en' отдельным чанком не становится (он статически импортирован), поэтому порог 20.
-$LocaleChunkPattern = '^(virtual_intlify-i18n-\d+|ar|bg|cz|de|el|es|eu|fr|he|hu|it|ja|ko|nl|nl-be|pl|pt|pt-br|ro|ru|sk|sv-se|tr|ua|zh-cn|zh-tw)-.*\.js(\.gz)?$'
+$LocaleChunkPattern = '^(virtual_intlify-i18n-\d+|ar|bg|cz|de|el|es|eu|fi|fr|he|hu|it|ja|ko|nl|nl-be|pl|pt|pt-br|ro|ru|sk|sv-se|tr|ua|zh-cn|zh-tw)-.*\.js(\.gz)?$'
 $MinLocaleChunks = 20
 
 function Write-Head([string]$Text) { Write-Host ''; Write-Host "==> $Text" -ForegroundColor Cyan }
@@ -90,7 +91,15 @@ $pkgRoot = Get-FullDir $PkgDir 'Package tree'
 
 $frontendDir = Join-Path $srcRoot 'frontend'
 $backendDir = Join-Path $srcRoot 'backend'
-$embedDir = Join-Path $backendDir 'internal\web\embed'
+# Куда бэкенд встраивает фронтенд: до v2.2.0 - internal/web/embed, с v2.2.0 - internal/web/dist.
+# Берём путь из //go:embed, чтобы скрипт работал с обеими раскладками без привязки к версии.
+$serverGoFile = Join-Path $backendDir 'internal\web\server.go'
+$embedSubdir = 'embed'
+if (Test-Path -LiteralPath $serverGoFile -PathType Leaf) {
+    $embedMatch = [regex]::Match([System.IO.File]::ReadAllText($serverGoFile, [System.Text.Encoding]::UTF8), '(?m)^[ \t]*//go:embed[ \t]+([^ \t*]+)')
+    if ($embedMatch.Success) { $embedSubdir = ($embedMatch.Groups[1].Value -split '/')[0] }
+}
+$embedDir = Join-Path $backendDir ("internal\web\" + $embedSubdir)
 $distDir = Join-Path $backendDir 'internal\web\dist'
 $i18nFile = Join-Path $frontendDir 'src\i18n\index.ts'
 $versionFile = Join-Path $pkgRoot 'version'
@@ -107,20 +116,20 @@ $brokenGlob = './!(en).json'
 $fixedGlob = './*.json'
 $i18nText = [System.IO.File]::ReadAllText($i18nFile, [System.Text.Encoding]::UTF8)
 
-if ($i18nText.Contains("'$fixedGlob'")) {
-    Write-Ok "i18n already fixed ('$fixedGlob')"
-}
-elseif ($i18nText.Contains("'$brokenGlob'")) {
+if ($i18nText.Contains("'$brokenGlob'")) {
     $i18nText = $i18nText.Replace("'$brokenGlob'", "'$fixedGlob'")
     [System.IO.File]::WriteAllText($i18nFile, $i18nText, (New-Object System.Text.UTF8Encoding($false)))
     Write-Ok "i18n patched: '$brokenGlob' -> '$fixedGlob'"
 }
+elseif ($i18nText -notmatch '!\(') {
+    # v2.1.3+ uses ['./locales/*.json', '!./locales/en.json']; no extglob - fine.
+    Write-Ok 'i18n glob has no extglob (OK)'
+}
 else {
     throw @"
-Cannot patch i18n: neither '$fixedGlob' nor '$brokenGlob' found in
-  $i18nFile
-Upstream probably changed this file. Open it and check the locales
-import.meta.glob(...) pattern: with Vite 8 (rolldown) it must NOT use extglob '!(...)'.
+Cannot patch i18n: unexpected extglob in $i18nFile
+Upstream probably changed this file. Check the locales import.meta.glob(...)
+pattern: with Vite 8 (rolldown) it must NOT use extglob '!(...)'.
 "@
 }
 
@@ -156,25 +165,41 @@ if (-not $SkipFrontend) {
             Write-Ok 'node_modules present (use -ForceInstall to reinstall)'
         }
 
-        # npm-скрипт "build" использует rm -rf/cp -r (Unix) — берём build:docker (чистый vite build)
-        # и раскладываем результат сами: так одинаково работает и на Windows, и на Linux.
-        Write-Host "    $Npm run build:docker"
-        & $Npm run build:docker
-        if ($LASTEXITCODE -ne 0) { throw "npm run build:docker failed (exit $LASTEXITCODE)" }
+        # v2.2.0+: npm-скрипт "build:docker" = "SKIP_TYPECHECK=1 vite build" (Unix-префикс,
+        # не работает через cmd.exe). Вызываем локальный vite напрямую с этой переменной.
+        $savedSkipTypecheck = [System.Environment]::GetEnvironmentVariable('SKIP_TYPECHECK')
+        try {
+            [System.Environment]::SetEnvironmentVariable('SKIP_TYPECHECK', '1', 'Process')
+            Write-Host "    $Npm exec -- vite build"
+            & $Npm exec -- vite build
+            if ($LASTEXITCODE -ne 0) { throw "vite build failed (exit $LASTEXITCODE)" }
+        }
+        finally {
+            [System.Environment]::SetEnvironmentVariable('SKIP_TYPECHECK', $savedSkipTypecheck, 'Process')
+        }
     }
     finally {
         Pop-Location
     }
 
-    if (-not (Test-Path -LiteralPath $distDir -PathType Container)) {
-        throw "Frontend build produced no dist dir: $distDir"
+    # До v2.2.0 vite писал сразу в backend/internal/web/dist; с v2.2.0 - в frontend/dist,
+    # откуда upstream копирует результат в backend/internal/web/dist (make embed-frontend).
+    $frontendDist = Join-Path $frontendDir 'dist'
+    $buildOutputDir = $distDir
+    if (Test-Path -LiteralPath (Join-Path $frontendDist 'assets') -PathType Container) {
+        $buildOutputDir = $frontendDist
     }
-    if (-not (Test-Path -LiteralPath $embedDir -PathType Container)) {
-        New-Item -ItemType Directory -Path $embedDir -Force | Out-Null
+    if (-not (Test-Path -LiteralPath $buildOutputDir -PathType Container)) {
+        throw "Frontend build produced no dist dir: $buildOutputDir"
     }
-    Get-ChildItem -LiteralPath $embedDir -Force | Remove-Item -Recurse -Force
-    Copy-Item -Path (Join-Path $distDir '*') -Destination $embedDir -Recurse -Force
-    Write-Ok "embed <- dist"
+    if ([System.IO.Path]::GetFullPath($buildOutputDir) -ne [System.IO.Path]::GetFullPath($embedDir)) {
+        if (-not (Test-Path -LiteralPath $embedDir -PathType Container)) {
+            New-Item -ItemType Directory -Path $embedDir -Force | Out-Null
+        }
+        Get-ChildItem -LiteralPath $embedDir -Force | Remove-Item -Recurse -Force
+        Copy-Item -Path (Join-Path $buildOutputDir '*') -Destination $embedDir -Recurse -Force
+    }
+    Write-Ok "frontend build ready in $embedDir (go:embed $embedSubdir/*)"
 
     # Проверка: без правки i18n чанков локалей не будет, и интерфейс будет только английским.
     $assetsDir = Join-Path $embedDir 'assets'
@@ -253,7 +278,7 @@ if (-not $SkipBackend) {
     $assetCount = ([regex]::Matches($text, '\.js\.gz')).Count
     Write-Ok "binary reports version $appVersion; embedded .js.gz assets: $assetCount"
     if ($SkipFrontend -eq $false -and $assetCount -lt $MinLocaleChunks) {
-        Write-Warn "Only $assetCount embedded .js.gz assets — check that the frontend was built into embed."
+        Write-Warn "Only $assetCount embedded .js.gz assets — check that the frontend was built into $embedDir."
     }
 }
 
